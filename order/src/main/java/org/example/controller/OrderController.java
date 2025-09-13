@@ -1,19 +1,18 @@
 package org.example.controller;
 
+import lombok.RequiredArgsConstructor;
 import org.example.entity.Order;
 import org.example.service.OrderService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/orders")
+@RequiredArgsConstructor
 public class OrderController {
 
-    @Autowired
-    private OrderService orderService;
+    private final OrderService orderService;
 
     @GetMapping
     public List<Order> getOrders() {
@@ -21,12 +20,12 @@ public class OrderController {
     }
 
     @GetMapping("/{orderId}")
-    public Optional<Order> getOrder(@PathVariable Long orderId) {
+    public Order getOrder(@PathVariable Long orderId) {
         return orderService.getOrder(orderId);
     }
 
     @PostMapping
-    public void createOrder(@RequestBody OrderDto orderDto) {
+    public void createOrder(@RequestBody OrderRequest orderDto) {
         Order order = orderService.createOrder(orderDto);
     }
 

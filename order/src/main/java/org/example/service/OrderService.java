@@ -1,32 +1,43 @@
 package org.example.service;
 
-import org.example.controller.OrderDto;
+import lombok.RequiredArgsConstructor;
+import org.example.controller.OrderRequest;
 import org.example.entity.Order;
+import org.example.entity.OrderItem;
 import org.example.repository.OrderRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class OrderService {
 
-    @Autowired
-    private OrderRepository orderRepository;
+    private final OrderRepository orderRepository;
 
-    public Order createOrder(OrderDto orderDto) {
+    public Order createOrder(OrderRequest orderRequest) {
         Order order = new Order();
-        Order newOrder = orderRepository.save(order);
-        return newOrder;
+        order.setTotalAmount(orderRequest.getTotalAmount());
+
+        List<OrderItem> orderItems = orderRequest.getOrderItemRequests().stream()
+                        .map(orderItemRequest -> {
+                            OrderItem orderItem = new OrderItem();
+                            orderItem.setProductId(orderItemRequest.getProductId());
+                            orderItem.setQuantity(orderItemRequest.getQuantity());
+                            orderItem.setOrder(order);
+                            return orderItem;
+                        }).toList();
+
+        order.setOrderItems(orderItems);
+        return orderRepository.save(order);
     }
 
     public List<Order> getOrders() {
         return orderRepository.findAll();
     }
 
-    public Optional<Order> getOrder(Long orderId) {
-        return orderRepository.findById(orderId);
+    public Order getOrder(Long orderId) {
+        return orderRepository.findById(orderId).orElseThrow();
     }
 
     public void deleteOrder(Long orderId) {
