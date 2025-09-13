@@ -27,9 +27,6 @@
       <module name="payment" target="17" />
       <module name="payment.main" target="17" />
       <module name="payment.test" target="17" />
-      <module name="shipping" target="17" />
-      <module name="shipping.main" target="17" />
-      <module name="shipping.test" target="17" />
     </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
@@ -49,9 +46,6 @@
       <module name="payment" options="-parameters" />
       <module name="payment.main" options="-parameters" />
       <module name="payment.test" options="-parameters" />
-      <module name="shipping" options="-parameters" />
-      <module name="shipping.main" options="-parameters" />
-      <module name="shipping.test" options="-parameters" />
     </option>
   </component>
 </project>

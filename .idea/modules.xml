@@ -18,9 +18,6 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/payment.main.iml" filepath="$PROJECT_DIR$/.idea/modules/payment.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/payment.test.iml" filepath="$PROJECT_DIR$/.idea/modules/payment.test.iml" />
       <module fileurl="file://$PROJECT_DIR$/saga-examples.iml" filepath="$PROJECT_DIR$/saga-examples.iml" />
-      <module fileurl="file://$PROJECT_DIR$/shipping.iml" filepath="$PROJECT_DIR$/shipping.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/shipping.main.iml" filepath="$PROJECT_DIR$/.idea/modules/shipping.main.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/shipping.test.iml" filepath="$PROJECT_DIR$/.idea/modules/shipping.test.iml" />
     </modules>
   </component>
 </project>

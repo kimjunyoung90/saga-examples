@@ -9,7 +9,6 @@ This document provides an overview of the microservice architecture setup for im
 | Order Service | 8081 | Manages order lifecycle | H2 (orderdb) | http://localhost:8081 |
 | Payment Service | 8082 | Handles payment processing | H2 (paymentdb) | http://localhost:8082 |
 | Inventory Service | 8083 | Manages product inventory | H2 (inventorydb) | http://localhost:8083 |
-| Shipping Service | 8084 | Handles order shipping | H2 (shippingdb) | http://localhost:8084 |
 
 ## Quick Start
 
@@ -19,7 +18,6 @@ This document provides an overview of the microservice architecture setup for im
 cd order && ./gradlew build
 cd ../payment && ./gradlew build  
 cd ../inventory && ./gradlew build
-cd ../shipping && ./gradlew build
 ```
 
 ### Run Services
@@ -33,8 +31,6 @@ cd payment && ./gradlew bootRun
 # Terminal 3 - Inventory Service
 cd inventory && ./gradlew bootRun
 
-# Terminal 4 - Shipping Service
-cd shipping && ./gradlew bootRun
 ```
 
 ### Health Checks
@@ -42,14 +38,12 @@ Once running, verify services are healthy:
 - Order Service: http://localhost:8081/actuator/health
 - Payment Service: http://localhost:8082/actuator/health
 - Inventory Service: http://localhost:8083/actuator/health
-- Shipping Service: http://localhost:8084/actuator/health
 
 ## Database Access
 Each service includes H2 console for database inspection:
 - Order Service: http://localhost:8081/h2-console
 - Payment Service: http://localhost:8082/h2-console
 - Inventory Service: http://localhost:8083/h2-console
-- Shipping Service: http://localhost:8084/h2-console
 
 **Connection Settings:**
 - JDBC URL: `jdbc:h2:mem:{servicename}db`
