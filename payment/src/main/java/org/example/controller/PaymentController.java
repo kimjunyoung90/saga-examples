@@ -5,8 +5,6 @@ import org.example.entity.Payment;
 import org.example.service.PaymentService;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Optional;
-
 @RestController
 @RequestMapping("/payment")
 @RequiredArgsConstructor
@@ -20,8 +18,8 @@ public class PaymentController {
     }
 
     @PostMapping
-    public Payment createPayment(@RequestBody PaymentRequeset paymentRequeset) {
-        return paymentService.createPayment(paymentRequeset);
+    public Payment createPayment(@RequestBody PaymentRequest paymentRequest) {
+        return paymentService.createPayment(paymentRequest);
     }
 
     @DeleteMapping("/{paymentId}")

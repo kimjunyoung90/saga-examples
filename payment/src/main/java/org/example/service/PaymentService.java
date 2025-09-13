@@ -1,7 +1,7 @@
 package org.example.service;
 
 import lombok.RequiredArgsConstructor;
-import org.example.controller.PaymentRequeset;
+import org.example.controller.PaymentRequest;
 import org.example.entity.Payment;
 import org.example.repository.PaymentRepository;
 import org.springframework.stereotype.Service;
@@ -16,10 +16,10 @@ public class PaymentService {
         return paymentRepository.findById(paymentId).orElseThrow();
     }
 
-    public Payment createPayment(PaymentRequeset paymentRequeset) {
+    public Payment createPayment(PaymentRequest paymentRequest) {
         Payment payment = new Payment();
-        payment.setOrderId(paymentRequeset.getOrderId());
-        payment.setAmount(paymentRequeset.getAmount());
+        payment.setOrderId(paymentRequest.getOrderId());
+        payment.setAmount(paymentRequest.getAmount());
         return paymentRepository.save(payment);
     }
 
