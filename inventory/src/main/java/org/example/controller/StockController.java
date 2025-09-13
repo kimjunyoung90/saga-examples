@@ -1,5 +1,6 @@
 package org.example.controller;
 
+import lombok.RequiredArgsConstructor;
 import org.example.entity.Stock;
 import org.example.service.StockService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,10 +10,10 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/stock")
+@RequiredArgsConstructor
 public class StockController {
 
-    @Autowired
-    private StockService stockService;
+    private final StockService stockService;
 
     @GetMapping("/{productId}")
     public Optional<Stock> getStock(@PathVariable Long productId) {
