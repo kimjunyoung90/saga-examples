@@ -1,0 +1,17 @@
+plugins {
+    id 'java' //Java 프로젝트 빌드 지원
+    id 'org.springframework.boot' version '3.2.0' // Spring Boot 플러그인
+    id 'io.spring.dependency-management' version '1.1.4' //의존성 관리 플러그인
+}
+
+group = 'org.example'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web' // 웹 MVC, Tomcat 내장
+    testImplementation 'org.springframework.boot:spring-boot-starter-test' // 테스트 라이브러리
+}
