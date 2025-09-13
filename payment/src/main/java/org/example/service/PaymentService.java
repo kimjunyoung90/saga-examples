@@ -4,10 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.example.controller.PaymentRequeset;
 import org.example.entity.Payment;
 import org.example.repository.PaymentRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
