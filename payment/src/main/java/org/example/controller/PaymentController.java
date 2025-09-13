@@ -1,27 +1,27 @@
 package org.example.controller;
 
+import lombok.RequiredArgsConstructor;
 import org.example.entity.Payment;
 import org.example.service.PaymentService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
 
 @RestController
 @RequestMapping("/payment")
+@RequiredArgsConstructor
 public class PaymentController {
 
-    @Autowired
-    private PaymentService paymentService;
+    private final PaymentService paymentService;
 
     @GetMapping("/{paymentId}")
-    public Optional<Payment> getPayment(@PathVariable Long paymentId) {
+    public Payment getPayment(@PathVariable Long paymentId) {
         return paymentService.getPayment(paymentId);
     }
 
     @PostMapping
-    public Payment createPayment(@RequestBody PaymentDto paymentDto) {
-        return paymentService.createPayment(paymentDto);
+    public Payment createPayment(@RequestBody PaymentRequeset paymentRequeset) {
+        return paymentService.createPayment(paymentRequeset);
     }
 
     @DeleteMapping("/{paymentId}")

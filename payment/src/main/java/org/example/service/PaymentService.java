@@ -1,6 +1,7 @@
 package org.example.service;
 
-import org.example.controller.PaymentDto;
+import lombok.RequiredArgsConstructor;
+import org.example.controller.PaymentRequeset;
 import org.example.entity.Payment;
 import org.example.repository.PaymentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,19 +10,19 @@ import org.springframework.stereotype.Service;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class PaymentService {
 
-    @Autowired
-    private PaymentRepository paymentRepository;
+    private final PaymentRepository paymentRepository;
 
-    public Optional<Payment> getPayment(Long paymentId) {
-        return paymentRepository.findById(paymentId);
+    public Payment getPayment(Long paymentId) {
+        return paymentRepository.findById(paymentId).orElseThrow();
     }
 
-    public Payment createPayment(PaymentDto paymentDto) {
+    public Payment createPayment(PaymentRequeset paymentRequeset) {
         Payment payment = new Payment();
-        payment.setOrderId(paymentDto.getOrderId());
-        payment.setAmount(paymentDto.getAmount());
+        payment.setOrderId(paymentRequeset.getOrderId());
+        payment.setAmount(paymentRequeset.getAmount());
         return paymentRepository.save(payment);
     }
 
