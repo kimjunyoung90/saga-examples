@@ -33,6 +33,16 @@ public class InventoryService {
 
     public List<Inventory> decreaseInventories(List<DecreaseInventoryRequest> requests) {
         List<Inventory> updated = new ArrayList<>();
+
+        // 먼저 모든 요청에 대해 재고 충분성을 검증
+        for(DecreaseInventoryRequest request : requests) {
+            Inventory inventory = inventoryRepository.findById(request.productId()).orElseThrow();
+            if(inventory.getQuantity() < request.quantity()) {
+                throw new RuntimeException("재고 부족");
+            }
+        }
+
+        // 모든 검증이 통과하면 재고 감소 실행
         for(DecreaseInventoryRequest request : requests) {
             Inventory inventory = inventoryRepository.findById(request.productId()).orElseThrow();
             inventory.setQuantity(inventory.getQuantity() - request.quantity());

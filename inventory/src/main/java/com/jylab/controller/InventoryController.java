@@ -35,7 +35,11 @@ public class InventoryController {
 
     @PutMapping("/decrease")
     public ResponseEntity<List<Inventory>> decreaseInventories(@RequestBody List<DecreaseInventoryRequest> requests) {
-        List<Inventory> updatedInventories = inventoryService.decreaseInventories(requests);
-        return ResponseEntity.ok(updatedInventories);
+        try {
+            List<Inventory> updatedInventories = inventoryService.decreaseInventories(requests);
+            return ResponseEntity.ok(updatedInventories);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 }
