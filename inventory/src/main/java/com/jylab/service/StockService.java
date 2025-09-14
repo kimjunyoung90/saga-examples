@@ -13,8 +13,8 @@ public class StockService {
 
     private final StockRepository stockRepository;
 
-    public Optional<Stock> getStock(Long productId) {
-        return stockRepository.findById(productId);
+    public Stock getStock(Long productId) {
+        return stockRepository.findById(productId).orElseThrow();
     }
 
     public Stock increaseStock(Long productId) {
