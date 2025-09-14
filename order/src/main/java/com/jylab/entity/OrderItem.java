@@ -1,5 +1,6 @@
 package com.jylab.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -16,7 +17,8 @@ public class OrderItem {
 
     @ManyToOne
     @JoinColumn(name = "order_id", nullable = false)
-    private Order order;
+    @JsonBackReference
+    private Orders orders;
 
     @Column(nullable = false)
     private Long productId;
@@ -24,6 +26,4 @@ public class OrderItem {
     @Column(nullable = false)
     private Long quantity;
 
-    @Column(nullable = false)
-    private Long price;
 }

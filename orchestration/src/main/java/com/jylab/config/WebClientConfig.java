@@ -8,17 +8,17 @@ import org.springframework.web.reactive.function.client.WebClient;
 public class WebClientConfig {
 
     @Bean
-    public WebClient orderWebClient(WebClient.Builder builder) {
+    public WebClient orderClient(WebClient.Builder builder) {
         return builder.baseUrl("http://localhost:8081").build();
     }
 
     @Bean
-    public WebClient paymentWebClient(WebClient.Builder builder) {
+    public WebClient paymentClient(WebClient.Builder builder) {
         return builder.baseUrl("http://localhost:8082").build();
     }
 
     @Bean
-    public WebClient inventoryWebClient(WebClient.Builder builder) {
+    public WebClient inventoryClient(WebClient.Builder builder) {
         return builder.baseUrl("http://localhost:8083").build();
     }
 }

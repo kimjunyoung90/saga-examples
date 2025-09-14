@@ -8,5 +8,5 @@ import java.util.List;
 @Setter
 public class OrderRequest {
     private Long totalAmount;
-    private List<OrderItemRequest> orderItemRequests;
+    private List<OrderItemRequest> orderItemRequest;
 }

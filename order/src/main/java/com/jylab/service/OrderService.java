@@ -1,8 +1,8 @@
 package com.jylab.service;
 
+import com.jylab.entity.Orders;
 import lombok.RequiredArgsConstructor;
 import com.jylab.controller.OrderRequest;
-import com.jylab.entity.Order;
 import com.jylab.entity.OrderItem;
 import com.jylab.repository.OrderRepository;
 import org.springframework.stereotype.Service;
@@ -15,28 +15,28 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
 
-    public Order createOrder(OrderRequest orderRequest) {
-        Order order = new Order();
-        order.setTotalAmount(orderRequest.getTotalAmount());
+    public Orders createOrder(OrderRequest orderRequest) {
+        Orders orders = new Orders();
+        orders.setTotalAmount(orderRequest.getTotalAmount());
 
-        List<OrderItem> orderItems = orderRequest.getOrderItemRequests().stream()
+        List<OrderItem> orderItems = orderRequest.getOrderItemRequest().stream()
                         .map(orderItemRequest -> {
                             OrderItem orderItem = new OrderItem();
                             orderItem.setProductId(orderItemRequest.getProductId());
                             orderItem.setQuantity(orderItemRequest.getQuantity());
-                            orderItem.setOrder(order);
+                            orderItem.setOrders(orders);
                             return orderItem;
                         }).toList();
 
-        order.setOrderItems(orderItems);
-        return orderRepository.save(order);
+        orders.setOrderItems(orderItems);
+        return orderRepository.save(orders);
     }
 
-    public List<Order> getOrders() {
+    public List<Orders> getOrders() {
         return orderRepository.findAll();
     }
 
-    public Order getOrder(Long orderId) {
+    public Orders getOrder(Long orderId) {
         return orderRepository.findById(orderId).orElseThrow();
     }
 

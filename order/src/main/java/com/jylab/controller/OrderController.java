@@ -1,7 +1,7 @@
 package com.jylab.controller;
 
+import com.jylab.entity.Orders;
 import lombok.RequiredArgsConstructor;
-import com.jylab.entity.Order;
 import com.jylab.service.OrderService;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,18 +15,18 @@ public class OrderController {
     private final OrderService orderService;
 
     @GetMapping
-    public List<Order> getOrders() {
+    public List<Orders> getOrders() {
         return orderService.getOrders();
     }
 
     @GetMapping("/{orderId}")
-    public Order getOrder(@PathVariable Long orderId) {
+    public Orders getOrder(@PathVariable Long orderId) {
         return orderService.getOrder(orderId);
     }
 
     @PostMapping
-    public void createOrder(@RequestBody OrderRequest orderDto) {
-        Order order = orderService.createOrder(orderDto);
+    public Orders createOrder(@RequestBody OrderRequest orderDto) {
+        return orderService.createOrder(orderDto);
     }
 
     @DeleteMapping("/{orderId}")
