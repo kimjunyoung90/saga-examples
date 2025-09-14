@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class OrderSagaOrchestrator {
@@ -59,7 +61,7 @@ public class OrderSagaOrchestrator {
         }
 
         //3. 재고
-        InventoryResponse inventoryResponse = inventoryClient.put()
+        List<InventoryResponse> inventoryResponses = inventoryClient.put()
                 .uri("/inventory/decrease")
                 .bodyValue(orderResponse.orderItems().stream().map(orderItem -> {
                     InventoryRequest inventoryRequest = new InventoryRequest(orderItem.productId(), orderItem.quantity());
@@ -67,10 +69,11 @@ public class OrderSagaOrchestrator {
                 }).toList())
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, clientResponse -> Mono.empty())
-                .bodyToMono(InventoryResponse.class)
+                .bodyToFlux(InventoryResponse.class)
+                .collectList()
                 .block();
 
-        if (inventoryResponse == null) {
+        if (inventoryResponses == null || inventoryResponses.isEmpty()) {
             //3-1. 결제 취소
             paymentClient.delete()
                     .uri("/payment/{paymentId}", paymentResponse.paymentId())
