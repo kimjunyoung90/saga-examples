@@ -66,3 +66,12 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+
+# Claude Code specific files
+.claude/
+CLAUDE.md
+*.claude.md
+microservices-setup.md
+
+# Additional IDE files to ignore
+.idea/
