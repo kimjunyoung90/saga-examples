@@ -8,8 +8,10 @@ import com.jylab.dto.response.OrderResponse;
 import com.jylab.dto.response.PaymentResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
@@ -40,6 +42,7 @@ public class OrderSagaOrchestrator {
                 .uri("/payment")
                 .bodyValue(new PaymentRequest(orderResponse.orderId(), orderResponse.totalAmount()))
                 .retrieve()
+                .onStatus(HttpStatusCode::isError, clientResponse -> Mono.empty())
                 .bodyToMono(PaymentResponse.class)
                 .block();
 
@@ -63,6 +66,7 @@ public class OrderSagaOrchestrator {
                     return inventoryRequest;
                 }).toList())
                 .retrieve()
+                .onStatus(HttpStatusCode::isError, clientResponse -> Mono.empty())
                 .bodyToMono(InventoryResponse.class)
                 .block();
 
