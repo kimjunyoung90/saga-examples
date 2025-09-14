@@ -30,17 +30,46 @@ cd inventory && ./gradlew bootRun
 cd orchestration && ./gradlew bootRun
 ```
 
-### 2. Saga 주문 처리 테스트
+### 2. 정상 주문 테스트
+
+**📦 초기 재고 상황**
+- 상품 ID 1: 재고 5개 (정상 주문 테스트용)
+- 상품 ID 2: 재고 0개 (보상 트랜잭션 테스트용)
+
 ```bash
+# 재고 확인
+curl http://localhost:8083/inventory/1
+
+# 정상 주문 (재고 있는 상품)
 curl -X POST http://localhost:8080/saga/order \
   -H "Content-Type: application/json" \
   -d '{
     "totalAmount": 30000,
     "orderItemRequest": [
-      {"productId": 1, "quantity": 2},
-      {"productId": 2, "quantity": 1}
+      {"productId": 1, "quantity": 1}
     ]
   }'
+```
+
+### 3. 보상 트랜잭션 테스트
+
+**재고 부족 시나리오 (보상 트랜잭션 확인)**
+```bash
+# 1. 재고 확인 (상품 ID 2는 초기에 0개)
+curl http://localhost:8083/inventory/2
+
+# 2. 재고 부족 상품으로 주문 시도
+curl -X POST http://localhost:8080/saga/order \
+  -H "Content-Type: application/json" \
+  -d '{
+    "totalAmount": 30000,
+    "orderItemRequest": [{"productId": 2, "quantity": 1}]
+  }'
+
+# 3. 결과 확인
+# 응답: "fail" - 보상 트랜잭션이 실행됨
+# 주문 목록 확인 (빈 목록이어야 함)
+curl http://localhost:8081/orders
 ```
 
 ## 📋 API 명세
@@ -80,10 +109,11 @@ curl -X POST http://localhost:8080/saga/order \
 
 ## 🛠️ 기술 스택
 
+- **Language**: Java 17
 - **Framework**: Spring Boot 3.2.0
 - **Build Tool**: Gradle
 - **Database**: H2 (In-Memory)
-- **Communication**: WebClient (Reactive)
+- **ORM**: JPA/Hibernate
 
 ## 📝 주요 특징
 
