@@ -47,7 +47,7 @@ public class OrderSagaOrchestrator {
         //3. 재고
         for(OrderItem orderItem : orderResponse.orderItems()) {
             InventoryResponse inventoryResponse = inventoryClient.put()
-                    .uri("/stock/{productId}/decrease", orderItem.productId())
+                    .uri("/inventory/{productId}/decrease", orderItem.productId())
                     .retrieve()
                     .bodyToMono(InventoryResponse.class)
                     .block();
