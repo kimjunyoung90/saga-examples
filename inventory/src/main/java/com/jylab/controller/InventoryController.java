@@ -6,6 +6,8 @@ import com.jylab.service.InventoryService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/inventory")
 @RequiredArgsConstructor
@@ -29,5 +31,11 @@ public class InventoryController {
     public ResponseEntity<Inventory> decreaseInventory(@PathVariable Long productId) {
         Inventory inventory = inventoryService.decreaseInventory(productId);
         return ResponseEntity.ok(inventory);
+    }
+
+    @PutMapping("/decrease")
+    public ResponseEntity<List<Inventory>> decreaseInventories(@RequestBody List<DecreaseInventoryRequest> requests) {
+        List<Inventory> updatedInventories = inventoryService.decreaseInventories(requests);
+        return ResponseEntity.ok(updatedInventories);
     }
 }

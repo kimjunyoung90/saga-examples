@@ -1,9 +1,13 @@
 package com.jylab.service;
 
+import com.jylab.controller.DecreaseInventoryRequest;
 import lombok.RequiredArgsConstructor;
 import com.jylab.entity.Inventory;
 import com.jylab.repository.InventoryRepository;
 import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -25,5 +29,16 @@ public class InventoryService {
         Inventory inventory = inventoryRepository.findById(productId).orElseThrow();
         inventory.setQuantity(inventory.getQuantity() - 1);
         return inventoryRepository.save(inventory);
+    }
+
+    public List<Inventory> decreaseInventories(List<DecreaseInventoryRequest> requests) {
+        List<Inventory> updated = new ArrayList<>();
+        for(DecreaseInventoryRequest request : requests) {
+            Inventory inventory = inventoryRepository.findById(request.productId()).orElseThrow();
+            inventory.setQuantity(inventory.getQuantity() - request.quantity());
+            Inventory newInventory = inventoryRepository.save(inventory);
+            updated.add(newInventory);
+        }
+        return updated;
     }
 }
