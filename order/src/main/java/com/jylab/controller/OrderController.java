@@ -32,7 +32,7 @@ public class OrderController {
     public ResponseEntity<Orders> createOrder(@RequestBody OrderRequest orderDto) {
         Orders order = orderService.createOrder(orderDto);
         return ResponseEntity
-                .created(URI.create("/orders/{orderId}" + order.getId()))
+                .created(URI.create("/orders/" + order.getId()))
                 .body(order);
     }
 
