@@ -4,12 +4,10 @@ import com.jylab.dto.request.InventoryRequest;
 import com.jylab.dto.request.OrderRequest;
 import com.jylab.dto.request.PaymentRequest;
 import com.jylab.dto.response.InventoryResponse;
-import com.jylab.dto.response.OrderItem;
 import com.jylab.dto.response.OrderResponse;
 import com.jylab.dto.response.PaymentResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -46,41 +44,44 @@ public class OrderSagaOrchestrator {
                 .block();
 
         if (paymentResponse == null || paymentResponse.paymentId() == null) {
+
             //2-1. 주문 취소
             orderClient.delete()
                     .uri("/orders/{orderId}", orderResponse.orderId())
                     .retrieve()
                     .toBodilessEntity()
                     .block();
+
+            return "fail";
         }
 
         //3. 재고
-        for (OrderItem orderItem : orderResponse.orderItems()) {
-            InventoryResponse inventoryResponse = inventoryClient.put()
-                    .uri("/inventory/{productId}/decrease", orderItem.productId())
+        InventoryResponse inventoryResponse = inventoryClient.put()
+                .uri("/inventory/decrease")
+                .bodyValue(orderResponse.orderItems().stream().map(orderItem -> {
+                    InventoryRequest inventoryRequest = new InventoryRequest(orderItem.productId(), orderItem.quantity());
+                    return inventoryRequest;
+                }).toList())
+                .retrieve()
+                .bodyToMono(InventoryResponse.class)
+                .block();
+
+        if (inventoryResponse == null) {
+            //3-1. 결제 취소
+            paymentClient.delete()
+                    .uri("/payment/{paymentId}", paymentResponse.paymentId())
                     .retrieve()
-                    .bodyToMono(InventoryResponse.class)
+                    .toBodilessEntity()
                     .block();
 
-            if (inventoryResponse == null || inventoryResponse.productId() == null) {
-                //3-1. 결제 취소
-                ResponseEntity<Void> response = paymentClient.delete()
-                        .uri("/payment/{paymentId}", paymentResponse.paymentId())
-                        .retrieve()
-                        .toBodilessEntity()
-                        .block();
+            //3-2. 주문 취소
+            orderClient.delete()
+                    .uri("/orders/{orderId}", orderResponse.orderId())
+                    .retrieve()
+                    .toBodilessEntity()
+                    .block();
 
-                if(!response.getStatusCode().is2xxSuccessful()) {
-                    //결제 취소 실패 시 실행할 로직 수행
-                }
-
-                //3-2. 주문 취소
-                orderClient.delete()
-                        .uri("/orders/{orderId}", orderResponse.orderId())
-                        .retrieve()
-                        .toBodilessEntity()
-                        .block();
-            }
+            return "fail";
         }
 
         return "success";

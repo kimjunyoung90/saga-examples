@@ -1,4 +1,4 @@
 package com.jylab.dto.request;
 
-public record InventoryRequest(Long orderId, Long productId, int quantity) {
+public record InventoryRequest(Long productId, Integer quantity) {
 }
