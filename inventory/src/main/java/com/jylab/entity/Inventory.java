@@ -10,7 +10,7 @@ import lombok.Setter;
 @Entity
 @Table
 @Getter @Setter
-public class Stock {
+public class Inventory {
 
     @Id
     private Long productId;
