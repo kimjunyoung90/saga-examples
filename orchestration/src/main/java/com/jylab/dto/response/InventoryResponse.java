@@ -1,4 +1,4 @@
 package com.jylab.dto.response;
 
-public record InventoryResponse(boolean success) {
+public record InventoryResponse(Long productId, Long quantity) {
 }
