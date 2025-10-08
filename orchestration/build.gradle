@@ -16,6 +16,11 @@ repositories {
 }
 
 dependencies {
+    // Submodule dependencies
+    implementation project(':order')
+    implementation project(':inventory')
+    implementation project(':payment')
+
     implementation 'org.springframework.boot:spring-boot-starter-web' // 웹 MVC, Tomcat 내장
     implementation 'org.springframework.boot:spring-boot-starter-webflux' // WebClient 지원
 
