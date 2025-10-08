@@ -1,1 +1,4 @@
 rootProject.name = 'choreography'
+include 'order'
+include 'payment'
+include 'inventory'
