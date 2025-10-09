@@ -1,0 +1,45 @@
+package com.example.controller;
+
+import lombok.RequiredArgsConstructor;
+import com.example.entity.Inventory;
+import com.example.service.InventoryService;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/inventory")
+@RequiredArgsConstructor
+public class InventoryController {
+
+    private final InventoryService inventoryService;
+
+    @GetMapping("/{productId}")
+    public ResponseEntity<Inventory> getInventory(@PathVariable Long productId) {
+        Inventory inventory = inventoryService.getStock(productId);
+        return ResponseEntity.ok(inventory);
+    }
+
+    @PutMapping("/{productId}/increase")
+    public ResponseEntity<Inventory> increaseInventory(@PathVariable Long productId) {
+        Inventory inventory = inventoryService.increaseInventory(productId);
+        return ResponseEntity.ok(inventory);
+    }
+
+    @PutMapping("/{productId}/decrease")
+    public ResponseEntity<Inventory> decreaseInventory(@PathVariable Long productId) {
+        Inventory inventory = inventoryService.decreaseInventory(productId);
+        return ResponseEntity.ok(inventory);
+    }
+
+    @PutMapping("/decrease")
+    public ResponseEntity<List<Inventory>> decreaseInventories(@RequestBody List<DecreaseInventoryRequest> requests) {
+        try {
+            List<Inventory> updatedInventories = inventoryService.decreaseInventories(requests);
+            return ResponseEntity.ok(updatedInventories);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+}
