@@ -1,8 +1,10 @@
 package com.example.service;
 
 import com.example.entity.Orders;
+import com.example.event.OrderCreatedEvent;
 import com.example.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,10 +16,13 @@ import java.util.List;
 public class OrderService {
 
     private final OrderRepository orderRepository;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     @Transactional
     public Orders create(Orders order) {
-        return orderRepository.save(order);
+        Orders orders = orderRepository.save(order);
+        kafkaTemplate.send("order", new OrderCreatedEvent(orders.getId()));
+        return orders;
     }
 
     public Orders findById(Long id) {
