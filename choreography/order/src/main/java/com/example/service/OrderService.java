@@ -21,7 +21,13 @@ public class OrderService {
     @Transactional
     public Orders create(Orders order) {
         Orders orders = orderRepository.save(order);
-        kafkaTemplate.send("order", new OrderCreatedEvent(orders.getId()));
+        kafkaTemplate.send("order", new OrderCreatedEvent(
+                orders.getId(),
+                orders.getProductId(),
+                orders.getQuantity(),
+                orders.getPrice(),
+                orders.getTotalAmount()
+        ));
         return orders;
     }
 
