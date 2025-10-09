@@ -3,7 +3,6 @@ package com.example.service;
 import com.example.entity.Orders;
 import lombok.RequiredArgsConstructor;
 import com.example.controller.OrderRequest;
-import com.example.entity.OrderItem;
 import com.example.repository.OrderRepository;
 import org.springframework.stereotype.Service;
 
@@ -17,18 +16,11 @@ public class OrderService {
 
     public Orders createOrder(OrderRequest orderRequest) {
         Orders orders = new Orders();
-        orders.setTotalAmount(orderRequest.getTotalAmount());
+        orders.setProductId(orderRequest.getProductId());
+        orders.setQuantity(orderRequest.getQuantity());
+        orders.setPrice(orderRequest.getPrice());
+        orders.setTotalAmount(orderRequest.getQuantity() * orderRequest.getPrice());
 
-        List<OrderItem> orderItems = orderRequest.getOrderItemRequest().stream()
-                        .map(orderItemRequest -> {
-                            OrderItem orderItem = new OrderItem();
-                            orderItem.setProductId(orderItemRequest.getProductId());
-                            orderItem.setQuantity(orderItemRequest.getQuantity());
-                            orderItem.setOrders(orders);
-                            return orderItem;
-                        }).toList();
-
-        orders.setOrderItems(orderItems);
         return orderRepository.save(orders);
     }
 

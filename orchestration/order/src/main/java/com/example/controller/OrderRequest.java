@@ -1,12 +1,12 @@
 package com.example.controller;
+
 import lombok.Getter;
 import lombok.Setter;
-
-import java.util.List;
 
 @Getter
 @Setter
 public class OrderRequest {
-    private Long totalAmount;
-    private List<OrderItemRequest> orderItemRequest;
+    private Long productId;
+    private Integer quantity;
+    private Long price;
 }
