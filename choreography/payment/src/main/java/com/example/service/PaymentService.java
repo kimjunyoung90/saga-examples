@@ -48,14 +48,6 @@ public class PaymentService {
     }
 
     @Transactional
-    public Payment processPayment(Long orderId, Long amount) {
-        Payment payment = new Payment();
-        payment.setOrderId(orderId);
-        payment.setAmount(amount);
-        return paymentRepository.save(payment);
-    }
-
-    @Transactional
     public void cancelPayment(Long orderId) {
         Payment payment = findByOrderId(orderId)
                 .orElseThrow(() -> new RuntimeException("Payment not found for order: " + orderId));
