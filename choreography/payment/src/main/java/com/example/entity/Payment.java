@@ -15,9 +15,9 @@ public class Payment {
     private int id;
 
     @Column
-    private int orderId;
+    private long orderId;
 
     @Column
-    private int amount;
+    private long amount;
 
 }
