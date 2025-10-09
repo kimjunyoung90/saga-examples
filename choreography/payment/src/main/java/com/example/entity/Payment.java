@@ -5,19 +5,17 @@ import lombok.Getter;
 import lombok.Setter;
 
 @Entity
-@Table
 @Getter
 @Setter
 public class Payment {
 
     @Id
-    @GeneratedValue
-    private int id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    @Column
-    private long orderId;
+    @Column(nullable = false)
+    private Long orderId;
 
-    @Column
-    private long amount;
-
+    @Column(nullable = false)
+    private Long amount;
 }
