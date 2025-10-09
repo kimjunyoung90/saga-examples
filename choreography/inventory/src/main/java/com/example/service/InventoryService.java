@@ -20,9 +20,14 @@ public class InventoryService {
         return inventoryRepository.save(inventory);
     }
 
-    public Inventory findById(Long productId) {
-        return inventoryRepository.findById(productId)
-                .orElseThrow(() -> new RuntimeException("Inventory not found: " + productId));
+    public Inventory findById(Long id) {
+        return inventoryRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Inventory not found: " + id));
+    }
+
+    public Inventory findByProductId(Long productId) {
+        return inventoryRepository.findByProductId(productId)
+                .orElseThrow(() -> new RuntimeException("Inventory not found for product: " + productId));
     }
 
     public List<Inventory> findAll() {
@@ -30,20 +35,21 @@ public class InventoryService {
     }
 
     @Transactional
-    public Inventory update(Long productId, Inventory inventory) {
-        Inventory existingInventory = findById(productId);
+    public Inventory update(Long id, Inventory inventory) {
+        Inventory existingInventory = findById(id);
+        existingInventory.setProductId(inventory.getProductId());
         existingInventory.setQuantity(inventory.getQuantity());
         return inventoryRepository.save(existingInventory);
     }
 
     @Transactional
-    public void delete(Long productId) {
-        inventoryRepository.deleteById(productId);
+    public void delete(Long id) {
+        inventoryRepository.deleteById(id);
     }
 
     @Transactional
     public void decreaseQuantity(Long productId, Integer quantity) {
-        Inventory inventory = findById(productId);
+        Inventory inventory = findByProductId(productId);
         if (inventory.getQuantity() < quantity) {
             throw new RuntimeException("Insufficient inventory for product: " + productId);
         }
@@ -53,7 +59,7 @@ public class InventoryService {
 
     @Transactional
     public void increaseQuantity(Long productId, Integer quantity) {
-        Inventory inventory = findById(productId);
+        Inventory inventory = findByProductId(productId);
         inventory.setQuantity(inventory.getQuantity() + quantity);
         inventoryRepository.save(inventory);
     }

@@ -5,18 +5,17 @@ import lombok.Getter;
 import lombok.Setter;
 
 @Entity
-@Table
 @Getter
 @Setter
 public class Inventory {
 
     @Id
-    @GeneratedValue
-    private long id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    @Column
-    private int code;
+    @Column(nullable = false, unique = true)
+    private Long productId;
 
-    @Column
-    private int quantity;
+    @Column(nullable = false)
+    private Integer quantity;
 }

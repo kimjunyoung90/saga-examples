@@ -21,9 +21,15 @@ public class InventoryController {
         return ResponseEntity.ok(created);
     }
 
-    @GetMapping("/{productId}")
-    public ResponseEntity<Inventory> findById(@PathVariable Long productId) {
-        Inventory inventory = inventoryService.findById(productId);
+    @GetMapping("/{id}")
+    public ResponseEntity<Inventory> findById(@PathVariable Long id) {
+        Inventory inventory = inventoryService.findById(id);
+        return ResponseEntity.ok(inventory);
+    }
+
+    @GetMapping("/product/{productId}")
+    public ResponseEntity<Inventory> findByProductId(@PathVariable Long productId) {
+        Inventory inventory = inventoryService.findByProductId(productId);
         return ResponseEntity.ok(inventory);
     }
 
@@ -33,15 +39,15 @@ public class InventoryController {
         return ResponseEntity.ok(inventories);
     }
 
-    @PutMapping("/{productId}")
-    public ResponseEntity<Inventory> update(@PathVariable Long productId, @RequestBody Inventory inventory) {
-        Inventory updated = inventoryService.update(productId, inventory);
+    @PutMapping("/{id}")
+    public ResponseEntity<Inventory> update(@PathVariable Long id, @RequestBody Inventory inventory) {
+        Inventory updated = inventoryService.update(id, inventory);
         return ResponseEntity.ok(updated);
     }
 
-    @DeleteMapping("/{productId}")
-    public ResponseEntity<Void> delete(@PathVariable Long productId) {
-        inventoryService.delete(productId);
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        inventoryService.delete(id);
         return ResponseEntity.noContent().build();
     }
 

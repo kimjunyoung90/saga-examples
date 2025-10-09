@@ -32,8 +32,10 @@ public class OrderService {
     @Transactional
     public Orders update(Long id, Orders order) {
         Orders existingOrder = findById(id);
+        existingOrder.setProductId(order.getProductId());
+        existingOrder.setQuantity(order.getQuantity());
+        existingOrder.setPrice(order.getPrice());
         existingOrder.setTotalAmount(order.getTotalAmount());
-        existingOrder.setOrderItems(order.getOrderItems());
         return orderRepository.save(existingOrder);
     }
 
