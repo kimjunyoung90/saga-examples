@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+  # Kafka with KRaft (Zookeeper 불필요)
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: choreography-kafka
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    networks:
+      - choreography-network
+
+  # Order Service
+  order-service:
+    build:
+      context: ./order
+      dockerfile: Dockerfile
+    container_name: choreography-order-service
+    depends_on:
+      - kafka
+    ports:
+      - "8081:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    networks:
+      - choreography-network
+
+  # Inventory Service
+  inventory-service:
+    build:
+      context: ./inventory
+      dockerfile: Dockerfile
+    container_name: choreography-inventory-service
+    depends_on:
+      - kafka
+    ports:
+      - "8082:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    networks:
+      - choreography-network
+
+  # Payment Service
+  payment-service:
+    build:
+      context: ./payment
+      dockerfile: Dockerfile
+    container_name: choreography-payment-service
+    depends_on:
+      - kafka
+    ports:
+      - "8083:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    networks:
+      - choreography-network
+
+networks:
+  choreography-network:
+    driver: bridge
+
+volumes:
+  kafka-data:
+    driver: local
