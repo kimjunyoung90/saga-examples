@@ -1,38 +1,46 @@
 package com.example.service;
 
 import com.example.entity.Orders;
-import lombok.RequiredArgsConstructor;
-import com.example.controller.OrderRequest;
 import com.example.repository.OrderRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class OrderService {
 
     private final OrderRepository orderRepository;
 
-    public Orders createOrder(OrderRequest orderRequest) {
-        Orders orders = new Orders();
-        orders.setProductId(orderRequest.getProductId());
-        orders.setQuantity(orderRequest.getQuantity());
-        orders.setPrice(orderRequest.getPrice());
-        orders.setTotalAmount(orderRequest.getQuantity() * orderRequest.getPrice());
-
-        return orderRepository.save(orders);
+    @Transactional
+    public Orders create(Orders order) {
+        return orderRepository.save(order);
     }
 
-    public List<Orders> getOrders() {
+    public Orders findById(Long id) {
+        return orderRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Order not found: " + id));
+    }
+
+    public List<Orders> findAll() {
         return orderRepository.findAll();
     }
 
-    public Orders getOrder(Long orderId) {
-        return orderRepository.findById(orderId).orElseThrow();
+    @Transactional
+    public Orders update(Long id, Orders order) {
+        Orders existingOrder = findById(id);
+        existingOrder.setProductId(order.getProductId());
+        existingOrder.setQuantity(order.getQuantity());
+        existingOrder.setPrice(order.getPrice());
+        existingOrder.setTotalAmount(order.getTotalAmount());
+        return orderRepository.save(existingOrder);
     }
 
-    public void deleteOrder(Long orderId) {
-        orderRepository.deleteById(orderId);
+    @Transactional
+    public void delete(Long id) {
+        orderRepository.deleteById(id);
     }
 }

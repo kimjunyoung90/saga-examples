@@ -1,12 +1,11 @@
 package com.example.controller;
 
 import com.example.entity.Orders;
-import lombok.RequiredArgsConstructor;
 import com.example.service.OrderService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.net.URI;
 import java.util.List;
 
 @RestController
@@ -16,31 +15,33 @@ public class OrderController {
 
     private final OrderService orderService;
 
-    @GetMapping
-    public ResponseEntity<List<Orders>> getOrders() {
-        List<Orders> orders = orderService.getOrders();
-        return ResponseEntity.ok(orders);
+    @PostMapping
+    public ResponseEntity<Orders> create(@RequestBody Orders order) {
+        Orders created = orderService.create(order);
+        return ResponseEntity.ok(created);
     }
 
-    @GetMapping("/{orderId}")
-    public ResponseEntity<Orders> getOrder(@PathVariable Long orderId) {
-        Orders order = orderService.getOrder(orderId);
+    @GetMapping("/{id}")
+    public ResponseEntity<Orders> findById(@PathVariable Long id) {
+        Orders order = orderService.findById(id);
         return ResponseEntity.ok(order);
     }
 
-    @PostMapping
-    public ResponseEntity<Orders> createOrder(@RequestBody OrderRequest orderDto) {
-        Orders order = orderService.createOrder(orderDto);
-        return ResponseEntity
-                .created(URI.create("/orders/" + order.getId()))
-                .body(order);
+    @GetMapping
+    public ResponseEntity<List<Orders>> findAll() {
+        List<Orders> orders = orderService.findAll();
+        return ResponseEntity.ok(orders);
     }
 
-    @DeleteMapping("/{orderId}")
-    public ResponseEntity<Void> cancelOrder(@PathVariable Long orderId) {
-        orderService.deleteOrder(orderId);
-        return ResponseEntity
-                .noContent()
-                .build();
+    @PutMapping("/{id}")
+    public ResponseEntity<Orders> update(@PathVariable Long id, @RequestBody Orders order) {
+        Orders updated = orderService.update(id, order);
+        return ResponseEntity.ok(updated);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        orderService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }

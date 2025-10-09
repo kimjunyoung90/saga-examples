@@ -1,54 +1,66 @@
 package com.example.service;
 
-import com.example.controller.DecreaseInventoryRequest;
-import lombok.RequiredArgsConstructor;
 import com.example.entity.Inventory;
 import com.example.repository.InventoryRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class InventoryService {
 
     private final InventoryRepository inventoryRepository;
 
-    public Inventory getStock(Long productId) {
-        return inventoryRepository.findById(productId).orElseThrow();
-    }
-
-    public Inventory increaseInventory(Long productId) {
-        Inventory inventory = inventoryRepository.findById(productId).orElseThrow();
-        inventory.setQuantity(inventory.getQuantity() + 1);
+    @Transactional
+    public Inventory create(Inventory inventory) {
         return inventoryRepository.save(inventory);
     }
 
-    public Inventory decreaseInventory(Long productId) {
-        Inventory inventory = inventoryRepository.findById(productId).orElseThrow();
-        inventory.setQuantity(inventory.getQuantity() - 1);
-        return inventoryRepository.save(inventory);
+    public Inventory findById(Long id) {
+        return inventoryRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Inventory not found: " + id));
     }
 
-    public List<Inventory> decreaseInventories(List<DecreaseInventoryRequest> requests) {
-        List<Inventory> updated = new ArrayList<>();
+    public Inventory findByProductId(Long productId) {
+        return inventoryRepository.findByProductId(productId)
+                .orElseThrow(() -> new RuntimeException("Inventory not found for product: " + productId));
+    }
 
-        // 먼저 모든 요청에 대해 재고 충분성을 검증
-        for(DecreaseInventoryRequest request : requests) {
-            Inventory inventory = inventoryRepository.findById(request.productId()).orElseThrow();
-            if(inventory.getQuantity() < request.quantity()) {
-                throw new RuntimeException("재고 부족");
-            }
-        }
+    public List<Inventory> findAll() {
+        return inventoryRepository.findAll();
+    }
 
-        // 모든 검증이 통과하면 재고 감소 실행
-        for(DecreaseInventoryRequest request : requests) {
-            Inventory inventory = inventoryRepository.findById(request.productId()).orElseThrow();
-            inventory.setQuantity(inventory.getQuantity() - request.quantity());
-            Inventory newInventory = inventoryRepository.save(inventory);
-            updated.add(newInventory);
+    @Transactional
+    public Inventory update(Long id, Inventory inventory) {
+        Inventory existingInventory = findById(id);
+        existingInventory.setProductId(inventory.getProductId());
+        existingInventory.setQuantity(inventory.getQuantity());
+        return inventoryRepository.save(existingInventory);
+    }
+
+    @Transactional
+    public void delete(Long id) {
+        inventoryRepository.deleteById(id);
+    }
+
+    @Transactional
+    public void decreaseQuantity(Long productId, Integer quantity) {
+        Inventory inventory = findByProductId(productId);
+        if (inventory.getQuantity() < quantity) {
+            throw new RuntimeException("Insufficient inventory for product: " + productId);
         }
-        return updated;
+        inventory.setQuantity(inventory.getQuantity() - quantity);
+        inventoryRepository.save(inventory);
+    }
+
+    @Transactional
+    public void increaseQuantity(Long productId, Integer quantity) {
+        Inventory inventory = findByProductId(productId);
+        inventory.setQuantity(inventory.getQuantity() + quantity);
+        inventoryRepository.save(inventory);
     }
 }
