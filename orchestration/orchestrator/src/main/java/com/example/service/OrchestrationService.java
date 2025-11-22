@@ -1,4 +1,4 @@
-package org.example.service;
+package com.example.service;
 
 import com.example.dto.request.InventoryRequest;
 import com.example.dto.request.OrderRequest;
@@ -13,9 +13,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+import java.math.BigDecimal;
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
-public class OrderSagaOrchestrator {
+public class OrchestrationService {
 
     @Qualifier("orderClient")
     private final WebClient orderClient;
@@ -24,8 +27,9 @@ public class OrderSagaOrchestrator {
     @Qualifier("inventoryClient")
     private final WebClient inventoryClient;
 
-    public String process(OrderRequest request) {
-        //1. 주문
+    public String orderProcess(OrderRequest request) {
+        String transactionId = UUID.randomUUID().toString();
+        //1. 주문 요청
         OrderResponse orderResponse = orderClient.post()
                 .uri("/orders")
                 .bodyValue(request)
@@ -33,57 +37,26 @@ public class OrderSagaOrchestrator {
                 .bodyToMono(OrderResponse.class)
                 .block();
 
-        if (orderResponse == null || orderResponse.orderId() == null) {
-            return "fail";
-        }
-
-        //2. 결제
+        //2. 결제 요청
+        Long orderId = orderResponse.orderId();
+        Long userId = orderResponse.userId();
+        BigDecimal totalAmount = new BigDecimal(orderResponse.quantity()).multiply(orderResponse.price());
         PaymentResponse paymentResponse = paymentClient.post()
                 .uri("/payment")
-                .bodyValue(new PaymentRequest(orderResponse.orderId(), orderResponse.totalAmount()))
+                .bodyValue(new PaymentRequest(orderId, userId, totalAmount))
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, clientResponse -> Mono.empty())
                 .bodyToMono(PaymentResponse.class)
                 .block();
 
-        if (paymentResponse == null || paymentResponse.paymentId() == null) {
-
-            //2-1. 주문 취소
-            orderClient.delete()
-                    .uri("/orders/{orderId}", orderResponse.orderId())
-                    .retrieve()
-                    .toBodilessEntity()
-                    .block();
-
-            return "fail";
-        }
-
         //3. 재고
         InventoryResponse inventoryResponse = inventoryClient.put()
                 .uri("/inventory/decrease")
-                .bodyValue(new InventoryRequest(orderResponse.productId(), orderResponse.quantity()))
+                .bodyValue(new InventoryRequest(orderResponse.orderId(), orderResponse.productId(), orderResponse.quantity()))
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, clientResponse -> Mono.empty())
                 .bodyToMono(InventoryResponse.class)
                 .block();
-
-        if (inventoryResponse == null) {
-            //3-1. 결제 취소
-            paymentClient.delete()
-                    .uri("/payment/{paymentId}", paymentResponse.paymentId())
-                    .retrieve()
-                    .toBodilessEntity()
-                    .block();
-
-            //3-2. 주문 취소
-            orderClient.delete()
-                    .uri("/orders/{orderId}", orderResponse.orderId())
-                    .retrieve()
-                    .toBodilessEntity()
-                    .block();
-
-            return "fail";
-        }
 
         return "success";
     }

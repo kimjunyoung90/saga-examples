@@ -1,7 +1,7 @@
-package org.example.controller;
+package com.example.controller;
 
 import com.example.dto.request.OrderRequest;
-import com.example.service.OrderSagaOrchestrator;
+import com.example.service.OrchestrationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,11 +14,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class OrchestrationController {
 
-    private final OrderSagaOrchestrator orchestrator;
+    private final OrchestrationService orchestrationService;
 
     @PostMapping("/order")
     public ResponseEntity<String> createOrder(@RequestBody OrderRequest request) {
-        String result = orchestrator.process(request);
+        String result = orchestrationService.orderProcess(request);
         return ResponseEntity.ok(result);
     }
 }
