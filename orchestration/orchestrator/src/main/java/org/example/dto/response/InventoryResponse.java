@@ -1,4 +1,4 @@
-package com.example.dto.response;
+package org.example.dto.response;
 
 public record InventoryResponse(Long productId, Long quantity) {
 }

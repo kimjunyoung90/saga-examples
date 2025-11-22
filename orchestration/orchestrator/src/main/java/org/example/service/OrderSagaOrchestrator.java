@@ -1,4 +1,4 @@
-package com.example.service;
+package org.example.service;
 
 import com.example.dto.request.InventoryRequest;
 import com.example.dto.request.OrderRequest;

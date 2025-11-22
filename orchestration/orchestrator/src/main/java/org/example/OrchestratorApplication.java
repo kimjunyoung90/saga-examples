@@ -1,11 +1,11 @@
-package com.example;
+package org.example;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class OrchestrationApplication {
+public class OrchestratorApplication {
     public static void main(String[] args) {
-        SpringApplication.run(OrchestrationApplication.class, args);
+        SpringApplication.run(OrchestratorApplication.class, args);
     }
 }
