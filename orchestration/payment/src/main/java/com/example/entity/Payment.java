@@ -1,12 +1,16 @@
 package com.example.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
+
+import java.math.BigDecimal;
 
 @Entity
+@Table(name = "payments")
 @Getter
-@Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@Builder
 public class Payment {
 
     @Id
@@ -17,5 +21,8 @@ public class Payment {
     private Long orderId;
 
     @Column(nullable = false)
-    private Long amount;
+    private Long userId;
+
+    @Column(nullable = false)
+    private BigDecimal totalAmount;
 }
