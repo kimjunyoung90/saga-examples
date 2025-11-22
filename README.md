@@ -25,7 +25,7 @@ sequenceDiagram
     participant PS as 💳 결제 서비스
     participant IS as 📦 재고 서비스
 
-    title 주문 처리 프로세스 흐름
+    title 상품 구매 프로세스
 
     %% --- 성공 흐름 (왼쪽) ---
         Client->> OS: 구매 요청
