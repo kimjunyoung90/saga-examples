@@ -38,18 +38,4 @@ public class OrderService {
         return orderRepository.save(order);
     }
 
-//    @Transactional
-//    public Order update(Long id, Order order) {
-//        Order existingOrder = findById(id);
-//        existingOrder.setProductId(order.getProductId());
-//        existingOrder.setQuantity(order.getQuantity());
-//        existingOrder.setPrice(order.getPrice());
-//        existingOrder.setTotalAmount(order.getTotalAmount());
-//        return orderRepository.save(existingOrder);
-//    }
-//
-//    @Transactional
-//    public void delete(Long id) {
-//        orderRepository.deleteById(id);
-//    }
 }
