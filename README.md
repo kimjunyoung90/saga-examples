@@ -1,8 +1,10 @@
 # Saga Pattern Examples
 
-MSA 분산 시스템간 트랜잭션 Saga 패턴 구현 예제
+MSA 분산 시스템간 트랜잭션 Saga 패턴 구현 예제  
 
-## 🏗️ 서비스
+고객의 상품 구매 프로세스를 Orchestration 방식, Choreography 방식으로 구현하여 차이 점을 확인하는 프로젝트 입니다.
+
+## 서비스
 
 ```
 ├── order/           # 주문 서비스 (Port: 8081)
@@ -51,9 +53,9 @@ sequenceDiagram
 
 ## 주요 포인트
 
-1. Saga Pattern **Orchestration**, **Choreography** 방식의 차이 이해
+1. **Orchestration**, **Choreography** 방식의 차이 이해
 2. **보상 트랜잭션(Compensating Transaction)** 구현
-3. **마이크로서비스 간 통신** 패턴
+3. **마이크로서비스 간 통신**
 4. **분산 시스템에서의 데이터 일관성** 관리
 
 ## 기술 스택
@@ -63,5 +65,5 @@ sequenceDiagram
 - **Build Tool**: Gradle
 - **Database**: H2 (In-Memory)
 - **ORM**: JPA/Hibernate
-
+- **Message Broker**: Kafka
 ---
