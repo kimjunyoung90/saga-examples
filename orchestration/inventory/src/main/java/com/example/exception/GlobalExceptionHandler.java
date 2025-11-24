@@ -12,4 +12,5 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Void> handleNotFoundException(InventoryNotFoundException ex) {
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
+
 }
