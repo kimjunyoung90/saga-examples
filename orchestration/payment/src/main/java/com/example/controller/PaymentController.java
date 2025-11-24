@@ -21,4 +21,10 @@ public class PaymentController {
         Payment created = paymentService.create(paymentRequest);
         return ResponseEntity.ok(created);
     }
+
+    @PostMapping("/cancel/{paymentId}")
+    public ResponseEntity<Void> cancel(Long paymentId) {
+        paymentService.cancel(paymentId);
+        return ResponseEntity.ok().build();
+    }
 }
