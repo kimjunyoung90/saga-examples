@@ -21,7 +21,7 @@ public class InventoryWebClient {
                 .uri(baseUrl + "/inventory")
                 .bodyValue(inventoryRequest)
                 .retrieve()
-                .onStatus(HttpStatusCode::isError, clientResponse -> {
+                .onStatus(HttpStatusCode::is5xxServerError, clientResponse -> {
                     return clientResponse.bodyToMono(String.class)
                             .flatMap(errorBody -> {
                                 return Mono.error(new InventoryFailedException(""));
