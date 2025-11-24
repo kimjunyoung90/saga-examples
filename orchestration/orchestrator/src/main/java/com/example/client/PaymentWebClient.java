@@ -21,13 +21,10 @@ public class PaymentWebClient {
                 .uri(baseUrl + "/payments")
                 .bodyValue(paymentRequest)
                 .retrieve()
-                .onStatus(HttpStatusCode::isError, clientResponse -> {
-                    return clientResponse.bodyToMono(String.class)
-                            .flatMap(errorBody -> {
-                               return Mono.error(new PaymentFailedException(""));
-                            });
-                })
-                .bodyToMono(PaymentResponse.class);
+                .bodyToMono(PaymentResponse.class)
+                .onErrorResume(throwable -> {
+                    return Mono.error(new PaymentFailedException("결재 실패: " + throwable.getMessage()));
+                });
     }
 
     public Mono<Void> cancelPayment(Long paymentId) {

@@ -23,13 +23,10 @@ public class OrderWebClient {
                 .uri(baseUrl + "/orders")
                 .bodyValue(orderRequest)
                 .retrieve()
-                .onStatus(HttpStatusCode::isError, clientResponse -> {
-                    return clientResponse.bodyToMono(String.class)
-                            .flatMap(errorBody -> {
-                                return Mono.error(new OrderFailedException(""));
-                            });
-                })
-                .bodyToMono(OrderResponse.class);
+                .bodyToMono(OrderResponse.class)
+                .onErrorResume(throwable -> {
+                    return Mono.error(new OrderFailedException("주문 실패: " + throwable.getMessage()));
+                });
     }
 
     public Mono<Void> cancelOrder(Long orderId) {

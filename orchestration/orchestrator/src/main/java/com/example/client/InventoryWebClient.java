@@ -4,7 +4,6 @@ import com.example.dto.request.InventoryRequest;
 import com.example.dto.response.InventoryResponse;
 import com.example.exception.InventoryFailedException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -21,12 +20,10 @@ public class InventoryWebClient {
                 .uri(baseUrl + "/inventory")
                 .bodyValue(inventoryRequest)
                 .retrieve()
-                .onStatus(HttpStatusCode::is5xxServerError, clientResponse -> {
-                    return clientResponse.bodyToMono(String.class)
-                            .flatMap(errorBody -> {
-                                return Mono.error(new InventoryFailedException(""));
-                            });
-                })
-                .bodyToMono(InventoryResponse.class);
+                .bodyToMono(InventoryResponse.class)
+                .onErrorResume(throwable -> {
+                    // WebClient의 모든 에러를 InventoryFailedException으로 변환
+                    return Mono.error(new InventoryFailedException("재고 예약 실패: " + throwable.getMessage()));
+                });
     }
 }
