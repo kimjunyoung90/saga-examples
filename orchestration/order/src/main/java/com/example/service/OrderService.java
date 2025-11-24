@@ -13,19 +13,9 @@ import java.util.List;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class OrderService {
 
     private final OrderRepository orderRepository;
-
-    public Order findById(Long id) {
-        return orderRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Order not found: " + id));
-    }
-
-    public List<Order> findAll() {
-        return orderRepository.findAll();
-    }
 
     @Transactional
     public Order create(OrderRequest orderRequest) {
