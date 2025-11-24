@@ -25,4 +25,17 @@ public class Payment {
 
     @Column(nullable = false)
     private BigDecimal totalAmount;
+
+    @Enumerated(EnumType.STRING)
+    private PaymentStatus status;
+
+    public void updateStatus(PaymentStatus status) {
+        this.status = status;
+    }
+
+    public enum PaymentStatus {
+        PROCESSED, //결제 성공
+        FAILED, //결제 실패
+        CANCELED //결제 성공
+    }
 }
