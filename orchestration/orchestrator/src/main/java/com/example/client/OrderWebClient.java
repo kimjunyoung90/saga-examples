@@ -22,4 +22,11 @@ public class OrderWebClient {
                 .retrieve()
                 .bodyToMono(OrderResponse.class);
     }
+
+    public Mono<Void> cancelOrder(Long orderId) {
+        return webClient.put()
+                .uri(baseUrl + "/orders/cancel/{orderId}", orderId)
+                .retrieve()
+                .bodyToMono(Void.class);
+    }
 }

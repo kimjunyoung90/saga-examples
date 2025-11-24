@@ -27,12 +27,13 @@ public class OrchestrationService {
 
     public String orderProcess(OrderRequest request) {
         String transactionId = UUID.randomUUID().toString();
+        Long orderId = null;
         try {
             //1. 주문 요청
             OrderResponse orderResponse = orderClient.createOrder(request).block();
 
             //2. 결제 요청
-            Long orderId = orderResponse.orderId();
+            orderId = orderResponse.orderId();
             Long userId = orderResponse.userId();
             BigDecimal totalAmount = new BigDecimal(orderResponse.quantity()).multiply(orderResponse.price());
             PaymentRequest paymentRequest = new PaymentRequest(orderId, userId, totalAmount);
@@ -43,9 +44,11 @@ public class OrchestrationService {
             InventoryResponse inventoryResponse = inventoryClient.reserveInventory(inventoryRequest).block();
         } catch (PaymentFailedException paymentFailedException) {
             //1. 주문 취소
+            orderClient.cancelOrder(orderId).block();
         } catch (InventoryFailedException inventoryFailedException) {
             //1. 결제 취소
             //2. 주문 취소
+            orderClient.cancelOrder(orderId).block();
         } catch (Exception e) {
             //1. nothing
         }
