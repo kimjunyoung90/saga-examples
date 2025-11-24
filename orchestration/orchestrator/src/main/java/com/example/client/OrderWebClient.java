@@ -2,7 +2,10 @@ package com.example.client;
 
 import com.example.dto.request.OrderRequest;
 import com.example.dto.response.OrderResponse;
+import com.example.exception.OrderFailedException;
+import com.example.exception.PaymentFailedException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -20,6 +23,12 @@ public class OrderWebClient {
                 .uri(baseUrl + "/orders")
                 .bodyValue(orderRequest)
                 .retrieve()
+                .onStatus(HttpStatusCode::isError, clientResponse -> {
+                    return clientResponse.bodyToMono(String.class)
+                            .flatMap(errorBody -> {
+                                return Mono.error(new OrderFailedException(""));
+                            });
+                })
                 .bodyToMono(OrderResponse.class);
     }
 

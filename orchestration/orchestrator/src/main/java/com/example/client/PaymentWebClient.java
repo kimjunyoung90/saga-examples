@@ -2,6 +2,7 @@ package com.example.client;
 
 import com.example.dto.request.PaymentRequest;
 import com.example.dto.response.PaymentResponse;
+import com.example.exception.PaymentFailedException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
@@ -20,7 +21,12 @@ public class PaymentWebClient {
                 .uri(baseUrl + "/payments")
                 .bodyValue(paymentRequest)
                 .retrieve()
-                .onStatus(HttpStatusCode::isError, clientResponse -> Mono.empty())
+                .onStatus(HttpStatusCode::isError, clientResponse -> {
+                    return clientResponse.bodyToMono(String.class)
+                            .flatMap(errorBody -> {
+                               return Mono.error(new PaymentFailedException(""));
+                            });
+                })
                 .bodyToMono(PaymentResponse.class);
     }
 

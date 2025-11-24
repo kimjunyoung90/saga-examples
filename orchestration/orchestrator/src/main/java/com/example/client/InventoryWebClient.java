@@ -2,6 +2,7 @@ package com.example.client;
 
 import com.example.dto.request.InventoryRequest;
 import com.example.dto.response.InventoryResponse;
+import com.example.exception.InventoryFailedException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
@@ -20,7 +21,12 @@ public class InventoryWebClient {
                 .uri(baseUrl + "/inventory")
                 .bodyValue(inventoryRequest)
                 .retrieve()
-                .onStatus(HttpStatusCode::isError, clientResponse -> Mono.empty())
+                .onStatus(HttpStatusCode::isError, clientResponse -> {
+                    return clientResponse.bodyToMono(String.class)
+                            .flatMap(errorBody -> {
+                                return Mono.error(new InventoryFailedException(""));
+                            });
+                })
                 .bodyToMono(InventoryResponse.class);
     }
 }
