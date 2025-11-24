@@ -28,6 +28,7 @@ public class OrchestrationService {
     public String orderProcess(OrderRequest request) {
         String transactionId = UUID.randomUUID().toString();
         Long orderId = null;
+        Long paymentId = null;
         try {
             //1. 주문 요청
             OrderResponse orderResponse = orderClient.createOrder(request).block();
@@ -38,6 +39,7 @@ public class OrchestrationService {
             BigDecimal totalAmount = new BigDecimal(orderResponse.quantity()).multiply(orderResponse.price());
             PaymentRequest paymentRequest = new PaymentRequest(orderId, userId, totalAmount);
             PaymentResponse paymentResponse = paymentClient.createPayment(paymentRequest).block();
+            paymentId = paymentResponse.paymentId();
 
             //3. 재고
             InventoryRequest inventoryRequest = new InventoryRequest(orderResponse.orderId(), orderResponse.productId(), orderResponse.quantity());
@@ -47,6 +49,7 @@ public class OrchestrationService {
             orderClient.cancelOrder(orderId).block();
         } catch (InventoryFailedException inventoryFailedException) {
             //1. 결제 취소
+            paymentClient.cancelPayment(paymentId).block();
             //2. 주문 취소
             orderClient.cancelOrder(orderId).block();
         } catch (Exception e) {
