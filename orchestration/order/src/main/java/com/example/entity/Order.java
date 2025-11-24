@@ -32,6 +32,10 @@ public class Order {
     @Enumerated(EnumType.STRING)
     private OrderStatus status;
 
+    public void updateStatus(OrderStatus status) {
+        this.status = status;
+    }
+
     public enum OrderStatus {
         PENDING,
         APPROVED,
