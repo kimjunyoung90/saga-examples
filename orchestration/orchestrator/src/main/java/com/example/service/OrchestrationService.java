@@ -44,19 +44,19 @@ public class OrchestrationService {
             //3. 재고
             InventoryRequest inventoryRequest = new InventoryRequest(orderResponse.orderId(), orderResponse.productId(), orderResponse.quantity());
             InventoryResponse inventoryResponse = inventoryClient.reserveInventory(inventoryRequest).block();
+
         } catch (PaymentFailedException paymentFailedException) {
             //1. 주문 취소
             orderClient.cancelOrder(orderId).block();
+            return "FAILED_PAYMENT";
         } catch (InventoryFailedException inventoryFailedException) {
             //1. 결제 취소
             paymentClient.cancelPayment(paymentId).block();
             //2. 주문 취소
             orderClient.cancelOrder(orderId).block();
-        } catch (Exception e) {
-            //1. nothing
+            return "FAILED_INVENTORY";
         }
 
-
-        return "success";
+        return "SUCCESS";
     }
 }
