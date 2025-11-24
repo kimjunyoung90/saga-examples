@@ -10,6 +10,7 @@ import com.example.dto.response.InventoryResponse;
 import com.example.dto.response.OrderResponse;
 import com.example.dto.response.PaymentResponse;
 import com.example.exception.InventoryFailedException;
+import com.example.exception.OrderFailedException;
 import com.example.exception.PaymentFailedException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -45,6 +46,8 @@ public class OrchestrationService {
             InventoryRequest inventoryRequest = new InventoryRequest(orderResponse.orderId(), orderResponse.productId(), orderResponse.quantity());
             InventoryResponse inventoryResponse = inventoryClient.reserveInventory(inventoryRequest).block();
 
+        } catch (OrderFailedException orderFailedException) {
+            return "FAILED_ORDER";
         } catch (PaymentFailedException paymentFailedException) {
             //1. 주문 취소
             orderClient.cancelOrder(orderId).block();
