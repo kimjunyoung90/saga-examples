@@ -18,7 +18,7 @@ public class OrchestrationController {
 
     @PostMapping("/order")
     public ResponseEntity<String> createOrder(@RequestBody OrderRequest request) {
-        String result = orchestrationService.orderProcess(request);
+        String result = orchestrationService.orderSagaTransaction(request);
         return ResponseEntity.ok(result);
     }
 }
