@@ -16,7 +16,7 @@ public class InventoryWebClient {
 
     //재고 예약
     public Mono<InventoryResponse> reserveInventory(InventoryRequest inventoryRequest) {
-        return webClient.put()
+        return webClient.post()
                 .uri(baseUrl + "/inventory")
                 .bodyValue(inventoryRequest)
                 .retrieve()
