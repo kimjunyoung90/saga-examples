@@ -27,7 +27,6 @@ public class OrchestrationService {
     private final InventoryWebClient inventoryClient;
 
     public String orderSagaTransaction(OrderRequest request) {
-        String transactionId = UUID.randomUUID().toString();
         Long orderId = null;
         Long paymentId = null;
         try {
