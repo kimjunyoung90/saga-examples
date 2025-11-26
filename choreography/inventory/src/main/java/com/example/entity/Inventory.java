@@ -1,12 +1,13 @@
 package com.example.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 @Entity
 @Getter
-@Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@Builder
 public class Inventory {
 
     @Id
@@ -18,4 +19,11 @@ public class Inventory {
 
     @Column(nullable = false)
     private Integer quantity;
+
+    public void deduct(int quantity) {
+        if(this.quantity < quantity) {
+            throw new IllegalStateException("재고가 부족합니다.");
+        }
+        this.quantity -= quantity;
+    }
 }
