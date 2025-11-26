@@ -1,14 +1,35 @@
 # Choreography Saga Pattern
 
-이벤트 기반 Saga Choreography 패턴 구현 예제입니다.
+이 프로젝트는 Choreography 방식의 Saga Pattern 구현 예제 입니다.
 
-## 아키텍처
+## 흐름도
 
-```
-Order Service ──┐
-                ├──> Kafka ──> Event-driven communication
-Inventory Service ──┤
-                └──> Payment Service
+```mermaid
+graph TB
+        Client[Client Application]
+        
+        subgraph "Message Broker"
+            Kafka[Apache Kafka]
+        end
+        
+        subgraph "Microservices"
+            OS[Order Service<br/>Port: 8081]
+            IS[Inventory Service<br/>Port: 8082]
+            PS[Payment Service<br/>Port: 8083]
+        end
+        
+    Client --> OS
+    
+    OS <--> Kafka
+    IS <--> Kafka
+    PS <--> Kafka
+    
+
+    
+    style OS fill:#e1f5fe
+    style IS fill:#f3e5f5
+    style PS fill:#e8f5e8
+    style Kafka fill:#fff3e0
 ```
 
 각 서비스는 독립적으로 이벤트를 발행/구독하며, 중앙 오케스트레이터 없이 분산 트랜잭션을 처리합니다.
@@ -18,7 +39,7 @@ Inventory Service ──┤
 - **Order Service** (Port 8081): 주문 생성 및 관리
 - **Inventory Service** (Port 8082): 재고 관리
 - **Payment Service** (Port 8083): 결제 처리
-- **Kafka (KRaft)**: 서비스 간 이벤트 메시징 (Zookeeper 불필요)
+- **Kafka (KRaft)**: 서비스 간 이벤트 메시징
 
 ## 실행 방법
 
@@ -33,24 +54,6 @@ docker-compose logs -f
 
 # 서비스 중지
 docker-compose down
-```
-
-### 개별 서비스 실행 (개발 모드)
-
-각 서비스를 개별적으로 실행하려면:
-
-```bash
-# Order Service
-cd order
-./gradlew bootRun
-
-# Inventory Service
-cd inventory
-./gradlew bootRun
-
-# Payment Service
-cd payment
-./gradlew bootRun
 ```
 
 **참고**: 개별 실행 시 Kafka가 로컬에서 실행 중이어야 합니다.

@@ -1,4 +1,4 @@
-# Saga Orchestration 예제
+# Orchestration Saga Pattern
 
 이 프로젝트는 여러 마이크로서비스에 걸친 분산 트랜잭션을 관리하기 위한 **Orchestration**방식의 **Saga Pattern**을 구현한 예제입니다.
 
