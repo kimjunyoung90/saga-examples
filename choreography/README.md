@@ -5,34 +5,26 @@
 ## 흐름도
 
 ```mermaid
-graph TB
-        Client[Client Application]
-        
-        subgraph "Message Broker"
-            Kafka[Apache Kafka]
-        end
-        
-        subgraph "Microservices"
-            OS[Order Service<br/>Port: 8081]
-            IS[Inventory Service<br/>Port: 8082]
-            PS[Payment Service<br/>Port: 8083]
-        end
-        
-    Client --> OS
-    
-    OS <--> Kafka
-    IS <--> Kafka
-    PS <--> Kafka
-    
+flowchart BT
+    subgraph subGraph0["Message Broker"]
+        Kafka["Apache Kafka"]
+    end
+    subgraph Microservices["Microservices"]
+        OS["Order Service"]
+        PS["Payment Service"]
+        IS["Inventory Service"]
+    end
+    Client["Client Application"] -- Request --> OS
+    OS <-- Events --> Kafka
+    PS <-- Events --> Kafka
+    IS <-- Events --> Kafka
 
-    
-    style OS fill:#e1f5fe
-    style IS fill:#f3e5f5
-    style PS fill:#e8f5e8
     style Kafka fill:#fff3e0
+    style OS fill:#e1f5fe
+    style PS fill:#e8f5e8
+    style IS fill:#f3e5f5
 ```
-
-각 서비스는 독립적으로 이벤트를 발행/구독하며, 중앙 오케스트레이터 없이 분산 트랜잭션을 처리합니다.
+- 각 서비스는 이벤트를 발행 및 구독하며 처리합니다.
 
 ## 구성 요소
 
