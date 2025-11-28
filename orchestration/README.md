@@ -1,10 +1,10 @@
 # Orchestration Saga Pattern
 
-이 프로젝트는 여러 마이크로서비스에 걸친 분산 트랜잭션을 관리하기 위한 **Orchestration**방식의 **Saga Pattern**을 구현한 예제입니다.
+이 프로젝트는 **Orchestration**방식의 **Saga Pattern**을 구현한 예제입니다.
 
 ## Orchestration 이란?
 
-Orchestration 방식은 중앙 조정자(Orchestrator)를 사용하여 여러 서비스에 걸친 트랜잭션 순서를 관리합니다. 서비스들이 이벤트를 통해 직접 통신하는 Choreography와 달리, Orchestration은 중앙 집중식 제어와 명확한 트랜잭션 흐름 관리를 제공합니다.
+Orchestration 방식은 중앙 조정자(Orchestrator)를 사용하여 여러 서비스에 걸친 트랜잭션을 관리합니다. 서비스들이 이벤트를 통해 직접 통신하는 Choreography와 달리, Orchestration은 중앙 집중식 제어와 명확한 트랜잭션 흐름 관리를 제공합니다.
 
 ### 주요 특징
 
