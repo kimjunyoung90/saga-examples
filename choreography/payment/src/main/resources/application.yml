@@ -29,6 +29,6 @@ spring:
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 
 server:
-  port: 8083
+  port: 8082
 
 
