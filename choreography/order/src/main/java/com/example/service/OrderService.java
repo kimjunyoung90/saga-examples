@@ -3,6 +3,8 @@ package com.example.service;
 import com.example.dto.OrderRequest;
 import com.example.entity.Order;
 import com.example.exception.OrderNotFoundException;
+import com.example.producer.OrderEventProducer;
+import com.example.producer.event.OrderCreatedEvent;
 import com.example.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class OrderService {
 
     private final OrderRepository orderRepository;
+    private final OrderEventProducer orderEventProducer;
 
     @Transactional
     public Order create(OrderRequest orderRequest) {
@@ -24,7 +27,18 @@ public class OrderService {
                 .quantity(orderRequest.quantity())
                 .price(orderRequest.price())
                 .build();
-        return orderRepository.save(order);
+        order = orderRepository.save(order);
+
+        //event
+        OrderCreatedEvent event = OrderCreatedEvent.builder()
+                .orderId(order.getId())
+                .productId(order.getProductId())
+                .quantity(order.getQuantity())
+                .status("ORDER_CREATED")
+                .build();
+        orderEventProducer.publishOrderCreated(event);
+
+        return order;
     }
 
     @Transactional
