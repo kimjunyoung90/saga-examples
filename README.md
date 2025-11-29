@@ -48,7 +48,7 @@ sequenceDiagram
         
         activate PS
         PS->>PS: 3. 결제 처리
-        PS->>Client: 3. 응답
+        PS->>Client: 4. 응답
         deactivate PS
         
         
@@ -57,10 +57,9 @@ sequenceDiagram
 
 ## 주요 포인트
 
-1. **Orchestration**, **Choreography** 방식의 차이 이해
-2. **보상 트랜잭션(Compensating Transaction)** 개념 이해
-3. **마이크로서비스 간 통신 흐름**
-4. **분산 시스템에서의 데이터 일관성** 관리 방법 숙지
+1. **마이크로서비스 간 분산 트랜잭션 이해**
+2. **Orchestration**, **Choreography** 방식의 차이 이해
+3. **보상 트랜잭션** 개념 이해
 
 ## 기술 스택
 
