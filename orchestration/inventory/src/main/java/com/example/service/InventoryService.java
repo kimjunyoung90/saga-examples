@@ -15,10 +15,18 @@ public class InventoryService {
     private final InventoryRepository inventoryRepository;
 
     @Transactional
-    public Inventory reserve(InventoryRequest inventoryRequest) {
+    public Inventory deduct(InventoryRequest inventoryRequest) {
         Inventory inventory = inventoryRepository.findByProductId(inventoryRequest.productId())
-                .orElseThrow(() -> new InventoryNotFoundException("상품 ID를 찾을 수 없습니다."));
+                .orElseThrow(() -> new InventoryNotFoundException("상품 정보를 찾을 수 없습니다."));
         inventory.deduct(inventoryRequest.quantity());
+        return inventoryRepository.save(inventory);
+    }
+
+    @Transactional
+    public Inventory cancel(Long productId, int quantity) {
+        Inventory inventory = inventoryRepository.findByProductId(productId)
+                .orElseThrow(() -> new InventoryNotFoundException("상품 정보를 찾을 수 없습니다."));
+        inventory.cancel(quantity);
         return inventoryRepository.save(inventory);
     }
 
