@@ -34,8 +34,8 @@ public class Payment {
     }
 
     public enum PaymentStatus {
-        PROCESSED, //결제 성공
+        APPROVED, //결제 성공
         FAILED, //결제 실패
-        CANCELED //결제 성공
+        CANCELED //결제 취소
     }
 }

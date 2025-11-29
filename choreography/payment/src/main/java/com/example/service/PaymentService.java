@@ -2,7 +2,8 @@ package com.example.service;
 
 import com.example.dto.PaymentRequest;
 import com.example.entity.Payment;
-import com.example.exception.PaymentNotApprovedException;
+import com.example.exception.PaymentFailedException;
+import com.example.exception.PaymentNotFoundException;
 import com.example.producer.PaymentEventProducer;
 import com.example.producer.event.MessageType;
 import com.example.producer.event.PaymentCreated;
@@ -21,11 +22,18 @@ public class PaymentService {
 
     @Transactional
     public Payment create(PaymentRequest paymentRequest) {
+
+        if (paymentRequest.userId() == 2) {
+            throw new PaymentFailedException();
+        }
+
         Payment payment = Payment.builder()
                 .orderId(paymentRequest.orderId())
                 .userId(paymentRequest.userId())
                 .totalAmount(paymentRequest.totalAmount())
+                .status(Payment.PaymentStatus.APPROVED)
                 .build();
+
         payment = paymentRepository.save(payment);
 
         PaymentCreated payload = PaymentCreated.builder()
@@ -33,7 +41,7 @@ public class PaymentService {
                 .userId(payment.getUserId())
                 .orderId(payment.getOrderId())
                 .totalAmount(payment.getTotalAmount())
-                .status("PAYMENT_APPROVED")
+                .status(Payment.PaymentStatus.APPROVED.name())
                 .build();
 
         PaymentMessage message = PaymentMessage.builder()
@@ -47,7 +55,7 @@ public class PaymentService {
     @Transactional
     public void cancel(Long paymentId) {
         Payment payment = paymentRepository.findById(paymentId)
-                .orElseThrow(() -> new PaymentNotApprovedException());
+                .orElseThrow(() -> new PaymentNotFoundException());
 
         payment.updateStatus(Payment.PaymentStatus.CANCELED);
         paymentRepository.save(payment);

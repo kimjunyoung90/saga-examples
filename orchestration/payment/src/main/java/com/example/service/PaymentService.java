@@ -2,6 +2,7 @@ package com.example.service;
 
 import com.example.dto.PaymentRequest;
 import com.example.entity.Payment;
+import com.example.exception.PaymentFailedException;
 import com.example.exception.PaymentNotFoundException;
 import com.example.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
@@ -16,10 +17,16 @@ public class PaymentService {
 
     @Transactional
     public Payment create(PaymentRequest paymentRequest) {
+
+        if(paymentRequest.userId() == 2) {
+            throw new PaymentFailedException();
+        }
+
         Payment payment = Payment.builder()
                 .orderId(paymentRequest.orderId())
                 .userId(paymentRequest.userId())
                 .totalAmount(paymentRequest.totalAmount())
+                .status(Payment.PaymentStatus.APPROVED)
                 .build();
         return paymentRepository.save(payment);
     }
