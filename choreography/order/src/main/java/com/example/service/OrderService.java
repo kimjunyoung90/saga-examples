@@ -6,6 +6,7 @@ import com.example.exception.OrderNotFoundException;
 import com.example.producer.OrderEventProducer;
 import com.example.producer.event.EventType;
 import com.example.producer.event.OrderCreatedEvent;
+import com.example.producer.event.OrderEvent;
 import com.example.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,13 +32,18 @@ public class OrderService {
         order = orderRepository.save(order);
 
         //event
-        OrderCreatedEvent event = OrderCreatedEvent.builder()
-                .eventType(EventType.ORDER_CREATED.name())
+        OrderCreatedEvent payload = OrderCreatedEvent.builder()
                 .orderId(order.getId())
                 .productId(order.getProductId())
                 .quantity(order.getQuantity())
                 .status("ORDER_CREATED")
                 .build();
+
+        OrderEvent event = OrderEvent.builder()
+                .type(EventType.ORDER_CREATED.name())
+                .payload(payload)
+                .build();
+
         orderEventProducer.publishOrderCreated(event);
 
         return order;

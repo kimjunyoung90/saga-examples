@@ -6,7 +6,6 @@ import java.math.BigDecimal;
 
 @Builder
 public record PaymentCreatedEvent(
-        String eventType,
         Long paymentId,
         Long orderId,
         Long userId,
