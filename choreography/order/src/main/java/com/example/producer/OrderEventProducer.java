@@ -1,7 +1,6 @@
 package com.example.producer;
 
-import com.example.producer.event.OrderCreatedEvent;
-import com.example.producer.event.OrderEvent;
+import com.example.producer.event.OrderMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
@@ -11,7 +10,7 @@ import org.springframework.stereotype.Component;
 public class OrderEventProducer {
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
-    public void publishOrderCreated(OrderEvent event) {
+    public void publishOrderCreated(OrderMessage event) {
         kafkaTemplate.send("order-events", event.type(), event);
     }
 

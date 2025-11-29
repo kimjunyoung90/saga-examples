@@ -6,7 +6,7 @@ import com.example.exception.InventoryNotFoundException;
 import com.example.producer.InventoryEventProducer;
 import com.example.producer.event.EventType;
 import com.example.producer.event.InventoryCreatedEvent;
-import com.example.producer.event.InventoryEvent;
+import com.example.producer.event.InventoryMessage;
 import com.example.repository.InventoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -34,7 +34,7 @@ public class InventoryService {
                 .productId(inventory.getProductId())
                 .status("SUCCESS")
                 .build();
-        InventoryEvent event = InventoryEvent.builder()
+        InventoryMessage event = InventoryMessage.builder()
                 .type(EventType.INVENTORY_RESERVED.name())
                 .payload(payload)
                 .build();

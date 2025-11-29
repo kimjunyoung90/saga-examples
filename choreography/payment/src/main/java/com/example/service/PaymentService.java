@@ -6,7 +6,7 @@ import com.example.exception.PaymentNotFoundException;
 import com.example.producer.PaymentEventProducer;
 import com.example.producer.event.EventType;
 import com.example.producer.event.PaymentCreatedEvent;
-import com.example.producer.event.PaymentEvent;
+import com.example.producer.event.PaymentMessage;
 import com.example.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -36,7 +36,7 @@ public class PaymentService {
                 .status("PAYMENT_APPROVED")
                 .build();
 
-        PaymentEvent event = PaymentEvent.builder()
+        PaymentMessage event = PaymentMessage.builder()
                 .type(EventType.PAYMENT_APPROVED.name())
                 .payload(payload)
                 .build();

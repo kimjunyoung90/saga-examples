@@ -1,7 +1,6 @@
 package com.example.producer;
 
-import com.example.producer.event.InventoryCreatedEvent;
-import com.example.producer.event.InventoryEvent;
+import com.example.producer.event.InventoryMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
@@ -11,7 +10,7 @@ import org.springframework.stereotype.Component;
 public class InventoryEventProducer {
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
-    public void inventoryCreatedEvent(InventoryEvent event) {
+    public void inventoryCreatedEvent(InventoryMessage event) {
         kafkaTemplate.send("inventory-events", event.type(), event);
     }
 }

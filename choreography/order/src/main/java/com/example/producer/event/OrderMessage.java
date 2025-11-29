@@ -3,7 +3,7 @@ package com.example.producer.event;
 import lombok.Builder;
 
 @Builder
-public record OrderEvent(
+public record OrderMessage(
         String type,
         Object payload
 ) {
