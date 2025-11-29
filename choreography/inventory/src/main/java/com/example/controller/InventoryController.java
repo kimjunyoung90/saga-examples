@@ -17,9 +17,9 @@ public class InventoryController {
 
     private final InventoryService inventoryService;
 
-    @PostMapping
-    public ResponseEntity<Inventory> create(@RequestBody InventoryRequest inventoryRequest) {
-        Inventory created = inventoryService.create(inventoryRequest);
+    @PostMapping("/reserve")
+    public ResponseEntity<Inventory> reserve(@RequestBody InventoryRequest inventoryRequest) {
+        Inventory created = inventoryService.reserve(inventoryRequest);
         return ResponseEntity.ok(created);
     }
 }

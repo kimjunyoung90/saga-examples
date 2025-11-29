@@ -4,6 +4,7 @@ import lombok.Builder;
 
 @Builder
 public record OrderCreatedEvent(
+    String eventType,
     Long orderId,
     Long userId,
     Long productId,

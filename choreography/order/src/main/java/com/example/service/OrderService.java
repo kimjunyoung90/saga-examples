@@ -4,6 +4,7 @@ import com.example.dto.OrderRequest;
 import com.example.entity.Order;
 import com.example.exception.OrderNotFoundException;
 import com.example.producer.OrderEventProducer;
+import com.example.producer.event.EventType;
 import com.example.producer.event.OrderCreatedEvent;
 import com.example.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,7 @@ public class OrderService {
 
         //event
         OrderCreatedEvent event = OrderCreatedEvent.builder()
+                .eventType(EventType.ORDER_CREATED.name())
                 .orderId(order.getId())
                 .productId(order.getProductId())
                 .quantity(order.getQuantity())

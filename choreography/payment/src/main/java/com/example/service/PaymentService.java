@@ -4,6 +4,7 @@ import com.example.dto.PaymentRequest;
 import com.example.entity.Payment;
 import com.example.exception.PaymentNotFoundException;
 import com.example.producer.PaymentEventProducer;
+import com.example.producer.event.EventType;
 import com.example.producer.event.PaymentCreatedEvent;
 import com.example.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,7 @@ public class PaymentService {
         payment = paymentRepository.save(payment);
 
         PaymentCreatedEvent event = PaymentCreatedEvent.builder()
+                .eventType(EventType.PAYMENT_APPROVED.name())
                 .paymentId(payment.getId())
                 .userId(payment.getUserId())
                 .orderId(payment.getOrderId())
