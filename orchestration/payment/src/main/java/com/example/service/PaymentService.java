@@ -27,7 +27,7 @@ public class PaymentService {
     @Transactional
     public void cancel(Long paymentId) {
         Payment payment = paymentRepository.findById(paymentId)
-                .orElseThrow(() -> new PaymentNotFoundException(""));
+                .orElseThrow(() -> new PaymentNotFoundException());
 
         payment.updateStatus(Payment.PaymentStatus.CANCELED);
         paymentRepository.save(payment);

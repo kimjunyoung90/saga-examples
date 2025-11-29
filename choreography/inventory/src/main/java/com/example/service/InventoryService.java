@@ -25,7 +25,7 @@ public class InventoryService {
     @Transactional
     public Inventory reserve(InventoryRequest inventoryRequest) {
         Inventory inventory = inventoryRepository.findByProductId(inventoryRequest.productId())
-                .orElseThrow(() -> new InventoryNotFoundException("상품 ID를 찾을 수 없습니다."));
+                .orElseThrow(() -> new InventoryNotFoundException());
         inventory.deduct(inventoryRequest.quantity());
         inventory = inventoryRepository.save(inventory);
 

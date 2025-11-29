@@ -2,7 +2,7 @@ package com.example.service;
 
 import com.example.dto.PaymentRequest;
 import com.example.entity.Payment;
-import com.example.exception.PaymentNotFoundException;
+import com.example.exception.PaymentNotApprovedException;
 import com.example.producer.PaymentEventProducer;
 import com.example.producer.event.MessageType;
 import com.example.producer.event.PaymentCreated;
@@ -47,7 +47,7 @@ public class PaymentService {
     @Transactional
     public void cancel(Long paymentId) {
         Payment payment = paymentRepository.findById(paymentId)
-                .orElseThrow(() -> new PaymentNotFoundException(""));
+                .orElseThrow(() -> new PaymentNotApprovedException());
 
         payment.updateStatus(Payment.PaymentStatus.CANCELED);
         paymentRepository.save(payment);

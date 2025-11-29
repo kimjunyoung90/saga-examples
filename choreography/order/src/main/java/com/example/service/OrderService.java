@@ -52,7 +52,7 @@ public class OrderService {
     @Transactional
     public void cancelOrder(Long orderId) {
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new OrderNotFoundException(""));
+                .orElseThrow(() -> new OrderNotFoundException());
 
         order.updateStatus(Order.OrderStatus.CANCELED);
         orderRepository.save(order);
