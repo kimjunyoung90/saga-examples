@@ -8,8 +8,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-
 @Service
 @RequiredArgsConstructor
 public class InventoryService {
@@ -17,7 +15,7 @@ public class InventoryService {
     private final InventoryRepository inventoryRepository;
 
     @Transactional
-    public Inventory create(InventoryRequest inventoryRequest) {
+    public Inventory reserve(InventoryRequest inventoryRequest) {
         Inventory inventory = inventoryRepository.findByProductId(inventoryRequest.productId())
                 .orElseThrow(() -> new InventoryNotFoundException("상품 ID를 찾을 수 없습니다."));
         inventory.deduct(inventoryRequest.quantity());
