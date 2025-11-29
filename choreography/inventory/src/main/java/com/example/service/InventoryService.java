@@ -4,8 +4,8 @@ import com.example.dto.InventoryRequest;
 import com.example.entity.Inventory;
 import com.example.exception.InventoryNotFoundException;
 import com.example.producer.InventoryEventProducer;
-import com.example.producer.event.EventType;
-import com.example.producer.event.InventoryCreatedEvent;
+import com.example.producer.event.MessageType;
+import com.example.producer.event.InventoryCreated;
 import com.example.producer.event.InventoryMessage;
 import com.example.repository.InventoryRepository;
 import lombok.RequiredArgsConstructor;
@@ -29,16 +29,16 @@ public class InventoryService {
         inventory.deduct(inventoryRequest.quantity());
         inventory = inventoryRepository.save(inventory);
 
-        InventoryCreatedEvent payload = InventoryCreatedEvent.builder()
+        InventoryCreated payload = InventoryCreated.builder()
                 .inventoryId(inventory.getId())
                 .productId(inventory.getProductId())
                 .status("SUCCESS")
                 .build();
-        InventoryMessage event = InventoryMessage.builder()
-                .type(EventType.INVENTORY_RESERVED.name())
+        InventoryMessage message = InventoryMessage.builder()
+                .type(MessageType.INVENTORY_RESERVED.name())
                 .payload(payload)
                 .build();
-        inventoryEventProducer.inventoryCreatedEvent(event);
+        inventoryEventProducer.inventoryCreatedEvent(message);
         return inventory;
     }
 

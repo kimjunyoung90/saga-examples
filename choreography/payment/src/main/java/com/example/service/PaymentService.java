@@ -4,8 +4,8 @@ import com.example.dto.PaymentRequest;
 import com.example.entity.Payment;
 import com.example.exception.PaymentNotFoundException;
 import com.example.producer.PaymentEventProducer;
-import com.example.producer.event.EventType;
-import com.example.producer.event.PaymentCreatedEvent;
+import com.example.producer.event.MessageType;
+import com.example.producer.event.PaymentCreated;
 import com.example.producer.event.PaymentMessage;
 import com.example.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +28,7 @@ public class PaymentService {
                 .build();
         payment = paymentRepository.save(payment);
 
-        PaymentCreatedEvent payload = PaymentCreatedEvent.builder()
+        PaymentCreated payload = PaymentCreated.builder()
                 .paymentId(payment.getId())
                 .userId(payment.getUserId())
                 .orderId(payment.getOrderId())
@@ -36,11 +36,11 @@ public class PaymentService {
                 .status("PAYMENT_APPROVED")
                 .build();
 
-        PaymentMessage event = PaymentMessage.builder()
-                .type(EventType.PAYMENT_APPROVED.name())
+        PaymentMessage message = PaymentMessage.builder()
+                .type(MessageType.PAYMENT_APPROVED.name())
                 .payload(payload)
                 .build();
-        paymentEventProducer.publishPaymentCreated(event);
+        paymentEventProducer.publishPaymentCreated(message);
         return payment;
     }
 

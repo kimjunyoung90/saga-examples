@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 public class PaymentEventProducer {
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
-    public void publishPaymentCreated(PaymentMessage event) {
-        kafkaTemplate.send("payment-events", event.type(), event);
+    public void publishPaymentCreated(PaymentMessage message) {
+        kafkaTemplate.send("payment-events", message.type(), message);
     }
 }

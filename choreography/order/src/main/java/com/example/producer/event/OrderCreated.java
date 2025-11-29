@@ -3,7 +3,7 @@ package com.example.producer.event;
 import lombok.Builder;
 
 @Builder
-public record OrderCreatedEvent(
+public record OrderCreated(
     Long orderId,
     Long userId,
     Long productId,

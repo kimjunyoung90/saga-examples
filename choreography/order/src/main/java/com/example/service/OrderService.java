@@ -4,8 +4,8 @@ import com.example.dto.OrderRequest;
 import com.example.entity.Order;
 import com.example.exception.OrderNotFoundException;
 import com.example.producer.OrderEventProducer;
-import com.example.producer.event.EventType;
-import com.example.producer.event.OrderCreatedEvent;
+import com.example.producer.event.MessageType;
+import com.example.producer.event.OrderCreated;
 import com.example.producer.event.OrderMessage;
 import com.example.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
@@ -31,20 +31,20 @@ public class OrderService {
                 .build();
         order = orderRepository.save(order);
 
-        //event
-        OrderCreatedEvent payload = OrderCreatedEvent.builder()
+        //message
+        OrderCreated payload = OrderCreated.builder()
                 .orderId(order.getId())
                 .productId(order.getProductId())
                 .quantity(order.getQuantity())
                 .status("ORDER_CREATED")
                 .build();
 
-        OrderMessage event = OrderMessage.builder()
-                .type(EventType.ORDER_CREATED.name())
+        OrderMessage message = OrderMessage.builder()
+                .type(MessageType.ORDER_CREATED.name())
                 .payload(payload)
                 .build();
 
-        orderEventProducer.publishOrderCreated(event);
+        orderEventProducer.publishOrderCreated(message);
 
         return order;
     }

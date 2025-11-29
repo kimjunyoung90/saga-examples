@@ -1,6 +1,6 @@
 package com.example.producer.event;
 
-public enum EventType {
+public enum MessageType {
     PAYMENT_APPROVED,
     PAYMENT_FAILED
 }

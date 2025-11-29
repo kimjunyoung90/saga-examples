@@ -5,7 +5,7 @@ import lombok.Builder;
 import java.math.BigDecimal;
 
 @Builder
-public record PaymentCreatedEvent(
+public record PaymentCreated(
         Long paymentId,
         Long orderId,
         Long userId,

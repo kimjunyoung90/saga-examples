@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 public class InventoryEventProducer {
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
-    public void inventoryCreatedEvent(InventoryMessage event) {
-        kafkaTemplate.send("inventory-events", event.type(), event);
+    public void inventoryCreatedEvent(InventoryMessage message) {
+        kafkaTemplate.send("inventory-events", message.type(), message);
     }
 }
