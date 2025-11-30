@@ -2,7 +2,6 @@ package com.example.service;
 
 import com.example.dto.PaymentRequest;
 import com.example.entity.Payment;
-import com.example.exception.PaymentFailedException;
 import com.example.exception.PaymentNotFoundException;
 import com.example.producer.PaymentEventProducer;
 import com.example.producer.event.MessageType;
@@ -12,6 +11,8 @@ import com.example.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import static com.example.entity.Payment.PaymentStatus.*;
 
 @Service
 @RequiredArgsConstructor
@@ -23,17 +24,16 @@ public class PaymentService {
     @Transactional
     public Payment create(PaymentRequest paymentRequest) {
 
-        if (paymentRequest.userId() == 2) {
-            throw new PaymentFailedException();
-        }
-
-        Payment payment = Payment.builder()
+        //1. 결제 요청
+        Payment newPayment = Payment.builder()
                 .orderId(paymentRequest.orderId())
-                .userId(paymentRequest.userId())
-                .totalAmount(paymentRequest.totalAmount())
-                .status(Payment.PaymentStatus.APPROVED)
+                .totalAmount(paymentRequest.amount())
+                .status(PENDING)
                 .build();
+        Payment payment = paymentRepository.save(newPayment);
 
+        //2. 결제 상태
+        payment.updateStatus(paymentRequest.userId() == 2 ? FAILED : APPROVED);
         payment = paymentRepository.save(payment);
 
         PaymentCreated payload = PaymentCreated.builder()

@@ -18,16 +18,16 @@ public class PaymentService {
     @Transactional
     public Payment create(PaymentRequest paymentRequest) {
 
-        if(paymentRequest.userId() == 2) {
-            throw new PaymentFailedException();
-        }
-
+        //1. 결제 요청
         Payment payment = Payment.builder()
                 .orderId(paymentRequest.orderId())
-                .userId(paymentRequest.userId())
-                .totalAmount(paymentRequest.totalAmount())
-                .status(Payment.PaymentStatus.APPROVED)
+                .status(Payment.PaymentStatus.PENDING)
                 .build();
+
+        paymentRepository.save(payment);
+
+        //2. 결제
+        payment.updateStatus(paymentRequest.userId() == 2 ? Payment.PaymentStatus.FAILED : Payment.PaymentStatus.APPROVED);
         return paymentRepository.save(payment);
     }
 
