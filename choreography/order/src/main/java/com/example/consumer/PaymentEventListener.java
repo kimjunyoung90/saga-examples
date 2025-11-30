@@ -1,6 +1,7 @@
 package com.example.consumer;
 
 import com.example.consumer.event.EventMessage;
+import com.example.consumer.event.PaymentApproved;
 import com.example.consumer.event.PaymentFailed;
 import com.example.service.OrderService;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -24,12 +25,18 @@ public class PaymentEventListener {
     public void handlePaymentEvent(ConsumerRecord<String, String> record) throws JsonProcessingException {
         EventMessage eventMessage = objectMapper.readValue(record.value(), EventMessage.class);
         switch (eventMessage.type()) {
+            case PAYMENT_APPROVED -> handlePaymentApprovedEvent(eventMessage.payload());
             case PAYMENT_FAILED -> handlePaymentFailedEvent(eventMessage.payload());
         }
 
     }
 
-    private void handlePaymentFailedEvent(JsonNode payload) throws JsonProcessingException{
+    private void handlePaymentApprovedEvent(JsonNode payload) throws JsonProcessingException {
+        PaymentApproved paymentApproved = objectMapper.readValue(payload.toString(), PaymentApproved.class);
+        orderService.approveOrder(paymentApproved.orderId());
+    }
+
+    private void handlePaymentFailedEvent(JsonNode payload) throws JsonProcessingException {
         PaymentFailed paymentFailed = objectMapper.readValue(payload.toString(), PaymentFailed.class);
         orderService.cancelOrder(paymentFailed.orderId());
     }

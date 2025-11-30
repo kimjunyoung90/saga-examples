@@ -51,6 +51,15 @@ public class OrderService {
     }
 
     @Transactional
+    public Order approveOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException());
+
+        order.updateStatus(Order.OrderStatus.APPROVED);
+        return orderRepository.save(order);
+    }
+
+    @Transactional
     public Order cancelOrder(Long orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new OrderNotFoundException());
