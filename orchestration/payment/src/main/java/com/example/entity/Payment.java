@@ -24,7 +24,7 @@ public class Payment {
     private Long userId;
 
     @Column(nullable = false)
-    private BigDecimal totalAmount;
+    private BigDecimal amount;
 
     @Enumerated(EnumType.STRING)
     private PaymentStatus status;
@@ -37,6 +37,5 @@ public class Payment {
         PENDING, //결제 요청
         APPROVED, //결제 성공
         FAILED, //결제 실패
-        CANCELED //결제 취소
     }
 }

@@ -22,9 +22,4 @@ public class PaymentController {
         return ResponseEntity.ok(created);
     }
 
-    @PostMapping("/{paymentId}/cancel")
-    public ResponseEntity<Void> cancel(@PathVariable Long paymentId) {
-        paymentService.cancel(paymentId);
-        return ResponseEntity.ok().build();
-    }
 }

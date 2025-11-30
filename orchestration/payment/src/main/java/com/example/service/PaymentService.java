@@ -3,7 +3,6 @@ package com.example.service;
 import com.example.dto.PaymentRequest;
 import com.example.entity.Payment;
 import com.example.exception.PaymentFailedException;
-import com.example.exception.PaymentNotFoundException;
 import com.example.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,6 +20,8 @@ public class PaymentService {
         //1. 결제 요청
         Payment payment = Payment.builder()
                 .orderId(paymentRequest.orderId())
+                .userId(paymentRequest.userId())
+                .amount(paymentRequest.amount())
                 .status(Payment.PaymentStatus.PENDING)
                 .build();
 
@@ -34,7 +35,7 @@ public class PaymentService {
         );
         paymentRepository.save(payment);
 
-        //3. 실패 시 예외
+        //3. 실패 시 예외(이력은 저장)
         if(payment.getStatus() == Payment.PaymentStatus.FAILED) {
             throw new PaymentFailedException();
         }
@@ -42,12 +43,4 @@ public class PaymentService {
         return payment;
     }
 
-    @Transactional
-    public void cancel(Long paymentId) {
-        Payment payment = paymentRepository.findById(paymentId)
-                .orElseThrow(() -> new PaymentNotFoundException());
-
-        payment.updateStatus(Payment.PaymentStatus.CANCELED);
-        paymentRepository.save(payment);
-    }
 }
