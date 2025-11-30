@@ -68,13 +68,10 @@ curl -X POST http://localhost:8080/saga/order \
     "quantity": 2,
     "price": 10000
   }'
-
-# Expected Response: "SUCCESS"
 ```
 
 **Inventory Failure Case:**
 ```bash
-# Request quantity exceeding available stock
 curl -X POST http://localhost:8080/saga/order \
   -H "Content-Type: application/json" \
   -d '{
@@ -83,10 +80,26 @@ curl -X POST http://localhost:8080/saga/order \
     "quantity": 999,
     "price": 10000
   }'
-
-# Expected Response: "FAILED_INVENTORY"
-# Check logs: Payment and Order are both canceled
 ```
+
+**Payment Failure Case:**  
+2번 사용자 결제 실패
+```bash
+curl -X POST http://localhost:8080/saga/order \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userId": 2,
+    "productId": 1,
+    "quantity": 999,
+    "price": 10000
+  }'
+```
+
+### 주요 흐름
+```mermaid
+
+```
+
 
 ## 참고 자료
 
