@@ -27,11 +27,4 @@ public class PaymentWebClient {
                 });
     }
 
-    public Mono<Void> cancelPayment(Long paymentId) {
-        return webClient.post()
-                .uri(baseUrl + "/payments/{paymentId}/cancel", paymentId)
-                .retrieve()
-                .onStatus(HttpStatusCode::isError, clientResponse -> Mono.empty())
-                .bodyToMono(Void.class);
-    }
 }
