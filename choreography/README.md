@@ -65,6 +65,11 @@ sequenceDiagram
     PaymentService->>Kafka: Publish PAYMENT_APPROVED
     deactivate PaymentService
 
+    loop Polling
+        Client->>OrderService: GET /orders/{orderId}
+        OrderService-->>Client: Order Status (APPROVED)
+    end
+
     Note over OrderService,PaymentService: Order completed successfully
 ```
 
@@ -106,6 +111,11 @@ sequenceDiagram
     activate OrderService
     OrderService->>OrderService: Update Order (CANCELED)
     deactivate OrderService
+
+    loop Polling
+        Client->>OrderService: GET /orders/{orderId}
+        OrderService-->>Client: Order Status (CANCELED)
+    end
 
     Note over OrderService,PaymentService: Order canceled with compensation
 ```
