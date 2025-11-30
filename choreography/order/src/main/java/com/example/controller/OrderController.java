@@ -23,11 +23,4 @@ public class OrderController {
         return ResponseEntity.created(URI.create("/orders/" + order.getId())).body(order);
     }
 
-    // 주문 취소
-    @PutMapping("/{orderId}/cancel")
-    public ResponseEntity<Order> cancel(@PathVariable Long orderId) {
-        Order order = orderService.cancelOrder(orderId);
-        return ResponseEntity.ok(order);
-    }
-
 }
