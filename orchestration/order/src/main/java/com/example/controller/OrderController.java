@@ -23,6 +23,12 @@ public class OrderController {
         return ResponseEntity.created(URI.create("/orders/" + order.getId())).body(order);
     }
 
+    @PutMapping("/{orderId}/approve")
+    public ResponseEntity<Order> approve(@PathVariable Long orderId) {
+        Order order = orderService.approve(orderId);
+        return ResponseEntity.ok(order);
+    }
+
     // 주문 취소
     @PutMapping("/{orderId}/cancel")
     public ResponseEntity<Order> cancel(@PathVariable Long orderId) {

@@ -35,4 +35,11 @@ public class OrderWebClient {
                 .retrieve()
                 .bodyToMono(Void.class);
     }
+
+    public Mono<Void> approveOrder(Long orderId) {
+        return webClient.put()
+                .uri(baseUrl + "/orders/{orderId}/approve", orderId)
+                .retrieve()
+                .bodyToMono(Void.class);
+    }
 }

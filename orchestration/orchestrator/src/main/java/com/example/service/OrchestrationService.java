@@ -43,6 +43,9 @@ public class OrchestrationService {
             PaymentRequest paymentRequest = new PaymentRequest(orderId, userId, totalAmount);
             paymentClient.createPayment(paymentRequest).block();
 
+            //4. 주문 확정 처리
+            orderClient.approveOrder(orderId).block();
+
         } catch (OrderFailedException orderFailedException) {
             return "FAILED_ORDER";
         } catch (InventoryFailedException inventoryFailedException) {
