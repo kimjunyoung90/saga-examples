@@ -31,7 +31,7 @@ public class OrderWebClient {
 
     public Mono<Void> cancelOrder(Long orderId) {
         return webClient.put()
-                .uri(baseUrl + "/orders/cancel/{orderId}", orderId)
+                .uri(baseUrl + "/orders/{orderId}/cancel", orderId)
                 .retrieve()
                 .bodyToMono(Void.class);
     }

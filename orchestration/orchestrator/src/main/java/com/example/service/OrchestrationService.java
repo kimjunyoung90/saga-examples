@@ -6,7 +6,6 @@ import com.example.client.PaymentWebClient;
 import com.example.dto.request.InventoryRequest;
 import com.example.dto.request.OrderRequest;
 import com.example.dto.request.PaymentRequest;
-import com.example.dto.response.InventoryResponse;
 import com.example.dto.response.OrderResponse;
 import com.example.exception.InventoryFailedException;
 import com.example.exception.OrderFailedException;

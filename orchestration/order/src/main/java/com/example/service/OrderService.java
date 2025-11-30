@@ -9,8 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Optional;
+import static com.example.entity.Order.OrderStatus.PENDING;
 
 @Slf4j
 @Service
@@ -26,16 +25,17 @@ public class OrderService {
                 .productId(orderRequest.productId())
                 .quantity(orderRequest.quantity())
                 .price(orderRequest.price())
+                .status(PENDING)
                 .build();
         return orderRepository.save(order);
     }
 
     @Transactional
-    public void cancelOrder(Long orderId) {
+    public Order cancelOrder(Long orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new OrderNotFoundException());
 
         order.updateStatus(Order.OrderStatus.CANCELED);
-        orderRepository.save(order);
+        return orderRepository.save(order);
     }
 }
