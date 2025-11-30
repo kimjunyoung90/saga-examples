@@ -36,10 +36,87 @@ flowchart BT
 
 ## 이벤트 흐름
 
-1. **주문 생성**: Order Service가 주문 생성 이벤트 발행
-2. **재고 확인**: Inventory Service가 이벤트를 구독하고 재고 차감
-3. **결제 처리**: Payment Service가 이벤트를 구독하고 결제 진행
-4. **보상 트랜잭션**: 실패 시 각 서비스가 보상 이벤트 발행/처리
+### Success Flow (성공 시나리오)
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant OrderService
+    participant Kafka
+    participant InventoryService
+    participant PaymentService
+
+    Client->>OrderService: POST /orders
+    activate OrderService
+    OrderService->>OrderService: Create Order (PENDING)
+    OrderService->>Kafka: Publish ORDER_CREATED
+    OrderService-->>Client: 201 Created
+    deactivate OrderService
+
+    Kafka->>InventoryService: ORDER_CREATED Event
+    activate InventoryService
+    InventoryService->>InventoryService: Reserve Inventory
+    InventoryService->>Kafka: Publish INVENTORY_RESERVED
+    deactivate InventoryService
+
+    Kafka->>PaymentService: ORDER_CREATED Event
+    activate PaymentService
+    PaymentService->>PaymentService: Process Payment (APPROVED)
+    PaymentService->>Kafka: Publish PAYMENT_APPROVED
+    deactivate PaymentService
+
+    Note over OrderService,PaymentService: Order completed successfully
+```
+
+### Failure Flow (실패 시나리오)
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant OrderService
+    participant Kafka
+    participant InventoryService
+    participant PaymentService
+
+    Client->>OrderService: POST /orders (userId=2)
+    activate OrderService
+    OrderService->>OrderService: Create Order (PENDING)
+    OrderService->>Kafka: Publish ORDER_CREATED
+    OrderService-->>Client: 201 Created
+    deactivate OrderService
+
+    Kafka->>InventoryService: ORDER_CREATED Event
+    activate InventoryService
+    InventoryService->>InventoryService: Reserve Inventory
+    InventoryService->>Kafka: Publish INVENTORY_RESERVED
+    deactivate InventoryService
+
+    Kafka->>PaymentService: ORDER_CREATED Event
+    activate PaymentService
+    PaymentService->>PaymentService: Process Payment (FAILED)
+    PaymentService->>Kafka: Publish PAYMENT_FAILED
+    deactivate PaymentService
+
+    Kafka->>InventoryService: PAYMENT_FAILED Event
+    activate InventoryService
+    InventoryService->>InventoryService: Rollback Inventory (Cancel)
+    deactivate InventoryService
+
+    Kafka->>OrderService: PAYMENT_FAILED Event
+    activate OrderService
+    OrderService->>OrderService: Update Order (CANCELED)
+    deactivate OrderService
+
+    Note over OrderService,PaymentService: Order canceled with compensation
+```
+
+### Event Types
+
+| Service | Published Events | Subscribed Events |
+|---------|-----------------|-------------------|
+| **Order Service** | `ORDER_CREATED` | `PAYMENT_FAILED`, `INVENTORY_FAILED` |
+| **Inventory Service** | `INVENTORY_RESERVED`, `INVENTORY_FAILED` | `ORDER_CREATED`, `PAYMENT_FAILED` |
+| **Payment Service** | `PAYMENT_APPROVED`, `PAYMENT_FAILED` | `ORDER_CREATED` |
 
 ## 기술 스택
 
