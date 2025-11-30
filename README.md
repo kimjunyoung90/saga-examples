@@ -53,7 +53,7 @@ sequenceDiagram
         deactivate PS
         
         activate OS
-        OS->>OS: 5. 주문 상태값 수정
+        OS->>OS: 5. 주문 성공
         OS->>Client: 6. 응답
         deactivate OS
         
