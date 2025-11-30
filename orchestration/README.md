@@ -22,36 +22,41 @@ Orchestrator가 모든 트랜잭션을 조정합니다:
 
 ```java
 public String orderSagaTransaction(OrderRequest request) {
-    String transactionId = UUID.randomUUID().toString();
     Long orderId = null;
-    Long paymentId = null;
 
     try {
         // Step 1: Create Order
         OrderResponse orderResponse = orderClient.createOrder(request).block();
-        orderId = orderResponse.orderId();
 
-        // Step 2: Process Payment
-        PaymentRequest paymentRequest = new PaymentRequest(orderId, userId, totalAmount);
-        PaymentResponse paymentResponse = paymentClient.createPayment(paymentRequest).block();
-        paymentId = paymentResponse.paymentId();
-
-        // Step 3: Reserve Inventory
-        InventoryRequest inventoryRequest = new InventoryRequest(orderId, productId, quantity);
+        // Step 2: Reserve Inventory
+        InventoryRequest inventoryRequest = new InventoryRequest(orderResponse.productId(), orderResponse.quantity());
         inventoryClient.reserveInventory(inventoryRequest).block();
+
+        // Step 3: Process Payment
+        orderId = orderResponse.orderId();
+        Long userId = orderResponse.userId();
+        BigDecimal totalAmount = new BigDecimal(orderResponse.quantity()).multiply(orderResponse.price());
+        PaymentRequest paymentRequest = new PaymentRequest(orderId, userId, totalAmount);
+        paymentClient.createPayment(paymentRequest).block();
+
+        // Step 4: Approve Order
+        orderClient.approveOrder(orderId).block();
 
         return "SUCCESS";
 
-    } catch (PaymentFailedException e) {
-        // Compensate: Cancel Order
-        orderClient.cancelOrder(orderId).block();
-        return "FAILED_PAYMENT";
+    } catch (OrderFailedException e) {
+        return "FAILED_ORDER";
 
     } catch (InventoryFailedException e) {
-        // Compensate: Cancel Payment and Order
-        paymentClient.cancelPayment(paymentId).block();
+        // Compensate: Cancel Order
         orderClient.cancelOrder(orderId).block();
         return "FAILED_INVENTORY";
+
+    } catch (PaymentFailedException e) {
+        // Compensate: Cancel Inventory and Order
+        inventoryClient.cancelInventory(new InventoryRequest(request.productId(), request.quantity())).block();
+        orderClient.cancelOrder(orderId).block();
+        return "FAILED_PAYMENT";
     }
 }
 ```
@@ -199,7 +204,7 @@ sequenceDiagram
     end
 
     Note over O: 보상 트랜잭션 완료
-    O-->>-C: "FAIL"
+    O-->>-C: "FAILED_PAYMENT"
 ```
 
 ### 트랜잭션 흐름 요약
