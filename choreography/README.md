@@ -145,3 +145,97 @@ sequenceDiagram
 | **Inventory Service** | `INVENTORY_RESERVED`, `INVENTORY_FAILED` | `ORDER_CREATED`, `PAYMENT_FAILED` |
 | **Payment Service** | `PAYMENT_APPROVED`, `PAYMENT_FAILED` | `ORDER_CREATED` |
 
+## 실행 방법
+
+### 1. Kafka 실행
+```bash
+cd choreography
+docker-compose up -d
+```
+
+### 2. 각 서비스 실행
+
+**Order Service (Port 8081):**
+```bash
+cd order
+./gradlew bootRun
+```
+
+**Inventory Service (Port 8082):**
+```bash
+cd inventory
+./gradlew bootRun
+```
+
+**Payment Service (Port 8083):**
+```bash
+cd payment
+./gradlew bootRun
+```
+
+### 3. Saga 테스트
+
+**Success Case:**
+```bash
+curl -X POST http://localhost:8081/orders \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userId": 1,
+    "productId": 1,
+    "quantity": 2,
+    "price": 10000
+  }'
+```
+
+응답:
+```json
+{
+  "orderId": 1,
+  "userId": 1,
+  "productId": 1,
+  "quantity": 2,
+  "price": 10000,
+  "status": "PENDING"
+}
+```
+
+주문 상태 확인 (폴링):
+```bash
+curl http://localhost:8081/orders/1
+```
+
+최종 상태: `APPROVED`
+
+**Payment Failure Case:**
+2번 사용자는 결제 실패하도록 구현되어 있습니다.
+```bash
+curl -X POST http://localhost:8081/orders \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userId": 2,
+    "productId": 1,
+    "quantity": 2,
+    "price": 10000
+  }'
+```
+
+최종 상태: `CANCELED` (보상 트랜잭션 실행됨)
+
+## Choreography vs Orchestration
+
+| 특성 | Choreography | Orchestration |
+|-----|--------------|---------------|
+| 제어 방식 | 분산형 (각 서비스가 자율적) | 중앙 집중형 (Orchestrator) |
+| 결합도 | 낮음 (이벤트 기반) | 높음 (직접 호출) |
+| 복잡도 | 로직이 여러 서비스에 분산 | 로직이 한 곳에 집중 |
+| 디버깅 | 어려움 (흐름 추적 복잡) | 쉬움 (중앙 관리) |
+| 확장성 | 높음 | 보통 |
+| 가시성 | 낮음 | 높음 |
+| 적합한 경우 | 느슨한 결합, 높은 확장성 필요 | 명확한 흐름, 쉬운 관리 필요 |
+
+## 참고 자료
+
+- [Microservices Patterns: Saga Pattern](https://microservices.io/patterns/data/saga.html)
+- [Event-Driven Architecture](https://martinfowler.com/articles/201701-event-driven.html)
+- [Choreography vs Orchestration](https://temporal.io/blog/to-choreograph-or-orchestrate-your-saga-that-is-the-question)
+
