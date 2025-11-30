@@ -24,7 +24,7 @@ public class OrderController {
     }
 
     // 주문 취소
-    @PutMapping("/cancel/{orderId}")
+    @PutMapping("/{orderId}/cancel")
     public ResponseEntity<Order> cancel(@PathVariable Long orderId) {
         Order order = orderService.cancelOrder(orderId);
         return ResponseEntity.ok(order);

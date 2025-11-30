@@ -27,7 +27,7 @@ public class OrderService {
                 .userId(orderRequest.userId())
                 .productId(orderRequest.productId())
                 .quantity(orderRequest.quantity())
-                .price(orderRequest.price())
+                .price(orderRequest.amount())
                 .build();
         order = orderRepository.save(order);
 
