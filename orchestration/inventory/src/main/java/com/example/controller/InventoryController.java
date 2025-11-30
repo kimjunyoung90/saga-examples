@@ -1,6 +1,6 @@
 package com.example.controller;
 
-import com.example.dto.CancelInventoryRequest;
+import com.example.dto.InventoryCancelRequest;
 import com.example.dto.InventoryRequest;
 import com.example.entity.Inventory;
 import com.example.service.InventoryService;
@@ -22,7 +22,7 @@ public class InventoryController {
     }
 
     @PostMapping("/cancel")
-    public ResponseEntity<Inventory> cancel(@RequestBody CancelInventoryRequest inventoryRequest) {
+    public ResponseEntity<Inventory> cancel(@RequestBody InventoryCancelRequest inventoryRequest) {
         Inventory canceled = inventoryService.cancel(inventoryRequest.productId(), inventoryRequest.quantity());
         return ResponseEntity.ok(canceled);
     }

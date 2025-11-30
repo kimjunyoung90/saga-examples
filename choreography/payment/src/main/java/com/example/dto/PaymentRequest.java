@@ -6,8 +6,8 @@ import java.math.BigDecimal;
 
 @Builder
 public record PaymentRequest(
-        Long orderId,
         Long userId,
+        Long orderId,
         BigDecimal amount
 ) {
 }
