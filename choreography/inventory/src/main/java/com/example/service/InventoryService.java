@@ -31,6 +31,7 @@ public class InventoryService {
         inventory = inventoryRepository.save(inventory);
 
         InventoryCreated payload = InventoryCreated.builder()
+                .orderId(inventoryRequest.orderId())
                 .inventoryId(inventory.getId())
                 .productId(inventory.getProductId())
                 .status("SUCCESS")
