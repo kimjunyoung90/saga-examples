@@ -22,6 +22,7 @@ MSA 분산 트랜잭션 Saga 패턴 구현 예제
 2. 주문 서비스에서는 구매 주문을 기록 한다.
 3. 재고 서비스에서 물품 재고를 확보한다.
 4. 결제 서비스에서 결제 처리를 진행한다.
+5. 결제가 끝나면 주문을 승인 상태로 수정한다.
 
 ```mermaid
 sequenceDiagram
@@ -48,8 +49,13 @@ sequenceDiagram
         
         activate PS
         PS->>PS: 3. 결제 처리
-        PS->>Client: 4. 응답
+        PS->>OS: 4. 승인 처리
         deactivate PS
+        
+        activate OS
+        OS->>OS: 5. 주문 상태값 수정
+        OS->>Client: 6. 응답
+        deactivate OS
         
         
         deactivate Client
