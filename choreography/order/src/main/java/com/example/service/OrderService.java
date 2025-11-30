@@ -34,6 +34,7 @@ public class OrderService {
         //message
         OrderCreated payload = OrderCreated.builder()
                 .orderId(order.getId())
+                .userId(order.getUserId())
                 .productId(order.getProductId())
                 .quantity(order.getQuantity())
                 .amount(order.getAmount())

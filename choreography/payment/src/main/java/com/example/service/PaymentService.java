@@ -26,6 +26,7 @@ public class PaymentService {
 
         //1. 결제 요청
         Payment newPayment = Payment.builder()
+                .userId(paymentRequest.userId())
                 .orderId(paymentRequest.orderId())
                 .totalAmount(paymentRequest.amount())
                 .status(PENDING)
