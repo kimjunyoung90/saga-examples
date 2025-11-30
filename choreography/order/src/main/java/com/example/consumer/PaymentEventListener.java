@@ -1,11 +1,11 @@
 package com.example.consumer;
 
-import com.example.entity.Order;
+import com.example.consumer.event.EventMessage;
+import com.example.consumer.event.PaymentFailed;
 import com.example.service.OrderService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jdk.jfr.Event;
 import lombok.RequiredArgsConstructor;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.stereotype.Component;

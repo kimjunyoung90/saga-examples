@@ -1,4 +1,4 @@
-package com.example.consumer;
+package com.example.consumer.event;
 
 import com.fasterxml.jackson.databind.JsonNode;
 

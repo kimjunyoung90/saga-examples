@@ -1,4 +1,4 @@
-package com.example.consumer;
+package com.example.consumer.event;
 
 public enum EventType {
     INVENTORY_FAILED,
