@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -16,6 +17,10 @@ public class PaymentEventListener {
     private final ObjectMapper objectMapper;
     private OrderService orderService;
 
+    @KafkaListener(
+            topics = "payment-events",
+            groupId = "order-service"
+    )
     public void handlePaymentEvent(ConsumerRecord<String, String> record) throws JsonProcessingException {
         EventMessage eventMessage = objectMapper.readValue(record.value(), EventMessage.class);
         switch (eventMessage.type()) {
