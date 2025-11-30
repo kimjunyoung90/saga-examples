@@ -25,7 +25,7 @@ public class OrderWebClient {
                 .retrieve()
                 .bodyToMono(OrderResponse.class)
                 .onErrorResume(throwable -> {
-                    return Mono.error(new OrderFailedException("주문 실패: " + throwable.getMessage()));
+                    return Mono.error(new OrderFailedException());
                 });
     }
 

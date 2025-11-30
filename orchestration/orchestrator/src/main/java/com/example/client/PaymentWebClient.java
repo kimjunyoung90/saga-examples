@@ -23,7 +23,7 @@ public class PaymentWebClient {
                 .retrieve()
                 .bodyToMono(PaymentResponse.class)
                 .onErrorResume(throwable -> {
-                    return Mono.error(new PaymentFailedException("결제 실패: " + throwable.getMessage()));
+                    return Mono.error(new PaymentFailedException());
                 });
     }
 
