@@ -15,7 +15,7 @@ public class PaymentService {
 
     private final PaymentRepository paymentRepository;
 
-    @Transactional
+    @Transactional(noRollbackFor = PaymentFailedException.class)
     public Payment create(PaymentRequest paymentRequest) {
 
         //1. 결제 요청
@@ -26,9 +26,20 @@ public class PaymentService {
 
         paymentRepository.save(payment);
 
-        //2. 결제
-        payment.updateStatus(paymentRequest.userId() == 2 ? Payment.PaymentStatus.FAILED : Payment.PaymentStatus.APPROVED);
-        return paymentRepository.save(payment);
+        //2. 결제 처리
+        payment.updateStatus(
+            paymentRequest.userId() == 2
+                ? Payment.PaymentStatus.FAILED
+                : Payment.PaymentStatus.APPROVED
+        );
+        paymentRepository.save(payment);
+
+        //3. 실패 시 예외
+        if(payment.getStatus() == Payment.PaymentStatus.FAILED) {
+            throw new PaymentFailedException();
+        }
+
+        return payment;
     }
 
     @Transactional

@@ -30,14 +30,14 @@ public class OrchestrationService {
         Long orderId = null;
         Long paymentId = null;
         try {
-            //1. 주문 요청
+            //1. 주문 생성
             OrderResponse orderResponse = orderClient.createOrder(request).block();
 
             //2. 재고 차감
             InventoryRequest inventoryRequest = new InventoryRequest(orderResponse.productId(), orderResponse.quantity());
             inventoryClient.reserveInventory(inventoryRequest).block();
 
-            //3. 결제
+            //3. 결제 처리
             orderId = orderResponse.orderId();
             Long userId = orderResponse.userId();
             BigDecimal totalAmount = new BigDecimal(orderResponse.quantity()).multiply(orderResponse.price());
@@ -59,7 +59,7 @@ public class OrchestrationService {
             return "FAILED_PAYMENT";
         } catch (Exception e) {
             //로그 적재
-            log.error("보상 트랜잭션 오류 : {}", e.getMessage());
+            log.error("기타 오류 : {}", e.getMessage());
         }
 
         return "SUCCESS";
