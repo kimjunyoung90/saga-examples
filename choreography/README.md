@@ -34,7 +34,7 @@ flowchart BT
 - **Kafka (KRaft)**: 서비스 간 이벤트 메시징
 
 
-## Saga 흐름
+## 이벤트 흐름
 
 1. **주문 생성**: Order Service가 주문 생성 이벤트 발행
 2. **재고 확인**: Inventory Service가 이벤트를 구독하고 재고 차감
