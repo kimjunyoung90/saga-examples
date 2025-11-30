@@ -30,7 +30,8 @@ public class Order {
     private BigDecimal amount;
 
     @Enumerated(EnumType.STRING)
-    private OrderStatus status;
+    @Builder.Default
+    private OrderStatus status = OrderStatus.PENDING;
 
     public void updateStatus(OrderStatus status) {
         this.status = status;

@@ -33,7 +33,7 @@ public class PaymentEventListener {
     private void handlePaymentFailedEvent(JsonNode jsonNode) throws JsonProcessingException {
         PaymentFailed paymentFailed = objectMapper.readValue(jsonNode.toString(), PaymentFailed.class);
         InventoryCancelRequest inventoryCancelRequest = InventoryCancelRequest.builder()
-                .productId(paymentFailed.orderId())
+                .productId(paymentFailed.productId())
                 .quantity(paymentFailed.quantity())
                 .build();
         inventoryService.cancel(inventoryCancelRequest);

@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class PaymentEventListener {
     private final ObjectMapper objectMapper;
-    private OrderService orderService;
+    private final OrderService orderService;
 
     @KafkaListener(
             topics = "payment-events",

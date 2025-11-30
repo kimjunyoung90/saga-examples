@@ -6,6 +6,7 @@ import com.example.exception.PaymentNotFoundException;
 import com.example.producer.PaymentEventProducer;
 import com.example.producer.event.MessageType;
 import com.example.producer.event.PaymentCreated;
+import com.example.producer.event.PaymentFailed;
 import com.example.producer.event.PaymentMessage;
 import com.example.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
@@ -37,19 +38,37 @@ public class PaymentService {
         payment.updateStatus(paymentRequest.userId() == 2 ? FAILED : APPROVED);
         payment = paymentRepository.save(payment);
 
-        PaymentCreated payload = PaymentCreated.builder()
-                .paymentId(payment.getId())
-                .userId(payment.getUserId())
-                .orderId(payment.getOrderId())
-                .totalAmount(payment.getTotalAmount())
-                .status(Payment.PaymentStatus.APPROVED.name())
-                .build();
+        //3. 결제 상태에 따라 이벤트 발행
+        if (payment.getStatus() == FAILED) {
+            PaymentFailed failedPayload = PaymentFailed.builder()
+                    .paymentId(payment.getId())
+                    .userId(payment.getUserId())
+                    .orderId(payment.getOrderId())
+                    .totalAmount(payment.getTotalAmount())
+                    .status(FAILED.name())
+                    .build();
 
-        PaymentMessage message = PaymentMessage.builder()
-                .type(MessageType.PAYMENT_APPROVED.name())
-                .payload(payload)
-                .build();
-        paymentEventProducer.publishPaymentCreated(message);
+            PaymentMessage failedMessage = PaymentMessage.builder()
+                    .type(MessageType.PAYMENT_FAILED.name())
+                    .payload(failedPayload)
+                    .build();
+            paymentEventProducer.publishPaymentCreated(failedMessage);
+        } else {
+            PaymentCreated approvedPayload = PaymentCreated.builder()
+                    .paymentId(payment.getId())
+                    .userId(payment.getUserId())
+                    .orderId(payment.getOrderId())
+                    .totalAmount(payment.getTotalAmount())
+                    .status(APPROVED.name())
+                    .build();
+
+            PaymentMessage approvedMessage = PaymentMessage.builder()
+                    .type(MessageType.PAYMENT_APPROVED.name())
+                    .payload(approvedPayload)
+                    .build();
+            paymentEventProducer.publishPaymentCreated(approvedMessage);
+        }
+
         return payment;
     }
 

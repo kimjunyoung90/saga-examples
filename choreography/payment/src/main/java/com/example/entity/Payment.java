@@ -27,7 +27,8 @@ public class Payment {
     private BigDecimal totalAmount;
 
     @Enumerated(EnumType.STRING)
-    private PaymentStatus status;
+    @Builder.Default
+    private PaymentStatus status = PaymentStatus.PENDING;
 
     public void updateStatus(PaymentStatus status) {
         this.status = status;
