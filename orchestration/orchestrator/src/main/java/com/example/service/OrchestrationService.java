@@ -27,17 +27,16 @@ public class OrchestrationService {
 
     public String orderSagaTransaction(OrderRequest request) {
         Long orderId = null;
-        Long paymentId = null;
         try {
             //1. 주문 생성
             OrderResponse orderResponse = orderClient.createOrder(request).block();
+            orderId = orderResponse.orderId();
 
             //2. 재고 차감
             InventoryRequest inventoryRequest = new InventoryRequest(orderResponse.productId(), orderResponse.quantity());
             inventoryClient.reserveInventory(inventoryRequest).block();
 
             //3. 결제 처리
-            orderId = orderResponse.orderId();
             Long userId = orderResponse.userId();
             BigDecimal totalAmount = new BigDecimal(orderResponse.quantity()).multiply(orderResponse.price());
             PaymentRequest paymentRequest = new PaymentRequest(orderId, userId, totalAmount);
