@@ -22,7 +22,7 @@ public class OrderService {
                 .userId(orderRequest.userId())
                 .productId(orderRequest.productId())
                 .quantity(orderRequest.quantity())
-                .price(orderRequest.price())
+                .amount(orderRequest.price())
                 .status(Order.OrderStatus.PENDING)
                 .build();
         return orderRepository.save(order);
