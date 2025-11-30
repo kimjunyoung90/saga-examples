@@ -13,7 +13,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class PaymentWebClient {
     private final WebClient webClient;
-    private final String baseUrl = "http://localhost:8082";
+    private final String baseUrl = "http://localhost:8083";
 
     //결제 요청
     public Mono<PaymentResponse> createPayment(PaymentRequest paymentRequest) {
@@ -23,7 +23,7 @@ public class PaymentWebClient {
                 .retrieve()
                 .bodyToMono(PaymentResponse.class)
                 .onErrorResume(throwable -> {
-                    return Mono.error(new PaymentFailedException("결재 실패: " + throwable.getMessage()));
+                    return Mono.error(new PaymentFailedException("결제 실패: " + throwable.getMessage()));
                 });
     }
 

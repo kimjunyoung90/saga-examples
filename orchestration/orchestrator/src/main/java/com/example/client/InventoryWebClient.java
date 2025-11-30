@@ -13,7 +13,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class InventoryWebClient {
     private final WebClient webClient;
-    private final String baseUrl = "http://localhost:8083";
+    private final String baseUrl = "http://localhost:8082";
 
     //재고 차감
     public Mono<InventoryResponse> reserveInventory(InventoryRequest inventoryRequest) {
@@ -35,7 +35,7 @@ public class InventoryWebClient {
                 .retrieve()
                 .bodyToMono(InventoryResponse.class)
                 .onErrorResume(throwable -> {
-                    return Mono.error(new InventoryCancelException("채고 원복 실패"));
+                    return Mono.error(new InventoryCancelException("재고 원복 실패"));
                 });
     }
 }
