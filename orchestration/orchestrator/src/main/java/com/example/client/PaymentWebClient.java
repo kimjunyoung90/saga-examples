@@ -4,7 +4,6 @@ import com.example.dto.request.PaymentRequest;
 import com.example.dto.response.PaymentResponse;
 import com.example.exception.PaymentFailedException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
