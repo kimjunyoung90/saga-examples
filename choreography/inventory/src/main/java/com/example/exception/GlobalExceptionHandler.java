@@ -13,4 +13,9 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
+    @ExceptionHandler(InsufficientInventoryException.class)
+    public ResponseEntity<Void> handleInsufficientInventoryException(InsufficientInventoryException ex) {
+        return new ResponseEntity<>(HttpStatus.CONFLICT);
+    }
+
 }

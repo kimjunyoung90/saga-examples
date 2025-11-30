@@ -1,5 +1,6 @@
 package com.example.entity;
 
+import com.example.exception.InsufficientInventoryException;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -22,7 +23,7 @@ public class Inventory {
 
     public void deduct(int quantity) {
         if(this.quantity < quantity) {
-            throw new IllegalStateException("재고가 부족합니다.");
+            throw new InsufficientInventoryException();
         }
         this.quantity -= quantity;
     }
