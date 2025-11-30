@@ -26,4 +26,8 @@ public class Inventory {
         }
         this.quantity -= quantity;
     }
+
+    public void cancel(int quantity) {
+        this.quantity -= quantity;
+    }
 }

@@ -23,17 +23,6 @@ public class InventoryEventListener {
         topics = "inventory-events",
         groupId = "order-service"
     )
-    /**
-     * ConsumerRecord<K, V> {
-     *     String topic;           // 토픽 이름
-     *     int partition;          // 파티션 번호
-     *     long offset;            // 오프셋
-     *     long timestamp;         // 타임스탬프
-     *     K key;                  // 메시지 키
-     *     V value;                // 메시지 값
-     *     Headers headers;        // 헤더 정보
-     * }
-     */
     public void handleInventoryEvent(ConsumerRecord<String, String> record) throws JsonProcessingException {
         EventMessage eventMessage = objectMapper.readValue(record.value(), EventMessage.class);
         switch (eventMessage.type()) {

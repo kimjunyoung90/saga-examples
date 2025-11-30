@@ -1,5 +1,6 @@
 package com.example.service;
 
+import com.example.dto.InventoryCancelRequest;
 import com.example.dto.InventoryRequest;
 import com.example.entity.Inventory;
 import com.example.exception.InventoryNotFoundException;
@@ -40,6 +41,14 @@ public class InventoryService {
                 .build();
         inventoryEventProducer.inventoryCreatedEvent(message);
         return inventory;
+    }
+
+    public Inventory cancel(InventoryCancelRequest inventoryCancelRequest) {
+        Inventory inventory = inventoryRepository.findByProductId(inventoryCancelRequest.productId())
+                .orElseThrow(() -> new InventoryNotFoundException());
+
+        inventory.cancel(inventoryCancelRequest.quantity());
+        return inventoryRepository.save(inventory);
     }
 
 }
