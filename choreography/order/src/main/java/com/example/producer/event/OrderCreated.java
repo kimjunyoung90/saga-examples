@@ -7,6 +7,5 @@ public record OrderCreated(
     Long orderId,
     Long userId,
     Long productId,
-    Integer quantity,
-    String status
+    Integer quantity
 ){}

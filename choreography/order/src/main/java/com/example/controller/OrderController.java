@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
+
 @RestController
 @RequestMapping("/orders")
 @RequiredArgsConstructor
@@ -17,15 +19,15 @@ public class OrderController {
     // 주문 요청
     @PostMapping
     public ResponseEntity<Order> create(@RequestBody OrderRequest orderRequest) {
-        Order created = orderService.create(orderRequest);
-        return ResponseEntity.ok(created);
+        Order order = orderService.create(orderRequest);
+        return ResponseEntity.created(URI.create("/orders/" + order.getId())).body(order);
     }
 
     // 주문 취소
     @PutMapping("/cancel/{orderId}")
     public ResponseEntity<Order> cancel(@PathVariable Long orderId) {
-        orderService.cancelOrder(orderId);
-        return ResponseEntity.ok().build();
+        Order order = orderService.cancelOrder(orderId);
+        return ResponseEntity.ok(order);
     }
 
 }

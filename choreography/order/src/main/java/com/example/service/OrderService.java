@@ -36,7 +36,6 @@ public class OrderService {
                 .orderId(order.getId())
                 .productId(order.getProductId())
                 .quantity(order.getQuantity())
-                .status("ORDER_CREATED")
                 .build();
 
         OrderMessage message = OrderMessage.builder()
@@ -50,11 +49,11 @@ public class OrderService {
     }
 
     @Transactional
-    public void cancelOrder(Long orderId) {
+    public Order cancelOrder(Long orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new OrderNotFoundException());
 
         order.updateStatus(Order.OrderStatus.CANCELED);
-        orderRepository.save(order);
+        return orderRepository.save(order);
     }
 }
