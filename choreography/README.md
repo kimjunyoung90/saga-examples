@@ -65,6 +65,11 @@ sequenceDiagram
     PaymentService->>Kafka: Publish PAYMENT_APPROVED
     deactivate PaymentService
 
+    Kafka->>OrderService: PAYMENT_APPROVED Event
+    activate OrderService
+    OrderService->>OrderService: Update Order (APPROVED)
+    deactivate OrderService
+
     loop Polling
         Client->>OrderService: GET /orders/{orderId}
         OrderService-->>Client: Order Status (APPROVED)
@@ -124,7 +129,7 @@ sequenceDiagram
 
 | Service | Published Events | Subscribed Events |
 |---------|-----------------|-------------------|
-| **Order Service** | `ORDER_CREATED` | `PAYMENT_FAILED`, `INVENTORY_FAILED` |
+| **Order Service** | `ORDER_CREATED` | `PAYMENT_APPROVED`, `PAYMENT_FAILED`, `INVENTORY_FAILED` |
 | **Inventory Service** | `INVENTORY_RESERVED`, `INVENTORY_FAILED` | `ORDER_CREATED`, `PAYMENT_FAILED` |
 | **Payment Service** | `PAYMENT_APPROVED`, `PAYMENT_FAILED` | `ORDER_CREATED` |
 
