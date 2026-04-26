@@ -48,6 +48,7 @@ public class OutboxScheduler {
                         message.getMessageKey(),
                         message.getPayload()
                 );
+                //멱등키(Consumer 멱등 처리 보장)
                 record.headers().add(new RecordHeader(HEADER_MESSAGE_ID, message.getMessageId().getBytes(StandardCharsets.UTF_8)));
                 record.headers().add(new RecordHeader(HEADER_EVENT_TYPE, message.getEventType().getBytes(StandardCharsets.UTF_8)));
 
