@@ -32,15 +32,15 @@ public class OutboxScheduler {
     @Scheduled(fixedDelayString = "${outbox.poll-interval-ms:500}")
     @Transactional
     public void publishEvent() {
-        List<OutboxMessage> pending = outboxMessageRepository.findByStatusOrderByCreatedAtAsc(
+        List<OutboxMessage> messages = outboxMessageRepository.findByStatusOrderByCreatedAtAsc(
                 OutboxMessage.OutboxStatus.PENDING,
                 PageRequest.of(0, BATCH_SIZE)
         );
-        if (pending.isEmpty()) {
+        if (messages.isEmpty()) {
             return;
         }
 
-        for (OutboxMessage message : pending) {
+        for (OutboxMessage message : messages) {
             try {
                 ProducerRecord<String, String> record = new ProducerRecord<>(
                         message.getTopic(),
