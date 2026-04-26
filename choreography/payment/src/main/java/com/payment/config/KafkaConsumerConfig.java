@@ -1,5 +1,7 @@
 package com.payment.config;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import org.apache.kafka.common.TopicPartition;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -25,6 +27,14 @@ public class KafkaConsumerConfig {
                 (record, ex) -> new TopicPartition(record.topic() + ".DLT", -1)
         );
         FixedBackOff backOff = new FixedBackOff(retryIntervalMs, maxRetryAttempts);
-        return new DefaultErrorHandler(recoverer, backOff);
+        DefaultErrorHandler handler = new DefaultErrorHandler(recoverer, backOff);
+
+        // 재시도해도 결과가 같은 영구 실패는 즉시 DLT로 격리
+        handler.addNotRetryableExceptions(
+                JsonParseException.class,
+                JsonMappingException.class
+        );
+
+        return handler;
     }
 }
