@@ -60,6 +60,7 @@ public class OutboxScheduler {
     }
 
     private void handlePublishFailure(OutboxMessage message, Exception e) {
+        //retryCount 증가
         message.recordFailure(e.getMessage());
         if (message.getRetryCount() >= maxRetryCount) {
             message.markFailed();
