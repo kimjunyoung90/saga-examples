@@ -1,0 +1,29 @@
+package com.orchestrator.client;
+
+import com.orchestrator.dto.request.PaymentRequest;
+import com.orchestrator.dto.response.PaymentResponse;
+import com.orchestrator.exception.PaymentFailedException;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
+
+@Component
+@RequiredArgsConstructor
+public class PaymentWebClient {
+    private final WebClient webClient;
+    private final String baseUrl = "http://localhost:8083";
+
+    //결제 요청
+    public Mono<PaymentResponse> createPayment(PaymentRequest paymentRequest) {
+        return webClient.post()
+                .uri(baseUrl + "/payments")
+                .bodyValue(paymentRequest)
+                .retrieve()
+                .bodyToMono(PaymentResponse.class)
+                .onErrorResume(throwable -> {
+                    return Mono.error(new PaymentFailedException());
+                });
+    }
+
+}
