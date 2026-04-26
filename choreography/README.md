@@ -229,7 +229,7 @@ sequenceDiagram
 
 이벤트 처리는 두 지점에서 실패할 수 있습니다 (발행 / 소비). 각각 다른 메커니즘으로 격리합니다.
 
-### 발행 측 실패
+### 메시지 발행 실패
 `DLQ` 라우팅 (무한 재시도 방지)
 
 스케줄러는 발행 실패 시 outbox 행에 시도 정보를 누적합니다. 최대 재시도 횟수를 초과하면 해당 메시지는 DLQ라는 토픽으로 발행됩니다.
@@ -249,18 +249,10 @@ sequenceDiagram
 - 무한 루프 가드: `topic.endsWith(".DLQ")` 체크로 DLQ row 자체가 또 실패해도 새 DLQ 안 만듦
 - 최후 안전망: DLQ 발행마저 5회 실패 → DB의 `FAILED` 상태로 영구 보관 → 운영자 수동 처리 (`SELECT * FROM outbox_messages WHERE status = 'FAILED'`)
 
-### 소비 측 실패 — DLT (Dead Letter Topic)
+### 메시지 소비 실패 — DLT (Dead Letter Topic)
 
-컨슈머 트랜잭션이 실패하면 Kafka가 재전달합니다. Spring Kafka의 `DefaultErrorHandler`로 정책을 지정합니다.
-
-```
-event 도착 → @KafkaListener 처리 → 성공 → offset commit
-                                ↓ 실패
-                                → 1초 후 재전달 (offset 미커밋)
-                                ↓ 3회 모두 실패
-                                → DLT 토픽으로 발행 (`<topic>.DLT`)
-                                → offset 전진
-```
+컨슈머 트랜잭션이 실패하면 Kafka가 재전달합니다. Spring Kafka의 `DefaultErrorHandler`로 정책을 지정합니다. 1초 간격으로 3회 재시도 후에도 실패하면 `<원본>.DLT` 토픽으로 발행하고 offset을 전진시켜 다음 메시지 처리로 넘어갑니다.
+컨슈머가 이벤트를 처리 후 commit 만 실패하는 경우에도 중복 재처리는 처리 event 관리 테이블로 방어됩니다.
 
 - 기본값: `consumer.retry.interval-ms=1000`, `consumer.retry.max-attempts=3`
 - DLT 토픽: 원본 토픽명 + `.DLT` 접미사 (예: `order-events.DLT`)
