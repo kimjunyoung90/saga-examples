@@ -1,5 +1,6 @@
 package com.example.consumer;
 
+import com.example.constant.KafkaTopics;
 import com.example.consumer.event.EventMessage;
 import com.example.consumer.event.PaymentFailed;
 import com.example.dto.InventoryCancelRequest;
@@ -19,7 +20,7 @@ public class PaymentEventListener {
     private final InventoryService inventoryService;
 
     @KafkaListener(
-            topics = "payment-events",
+            topics = KafkaTopics.PAYMENT_EVENTS,
             groupId = "inventory-service"
     )
     public void handlePaymentEvent(ConsumerRecord<String, String> record) throws JsonProcessingException {

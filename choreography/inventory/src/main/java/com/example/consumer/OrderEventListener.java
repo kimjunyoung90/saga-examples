@@ -1,5 +1,6 @@
 package com.example.consumer;
 
+import com.example.constant.KafkaTopics;
 import com.example.consumer.event.EventMessage;
 import com.example.consumer.event.OrderCreatedEvent;
 import com.example.dto.InventoryRequest;
@@ -27,7 +28,7 @@ public class OrderEventListener {
     private final InventoryEventProducer inventoryEventProducer;
 
     @KafkaListener(
-            topics = "order-events",
+            topics = KafkaTopics.ORDER_EVENTS,
             groupId = "inventory-service"
     )
     public void handleOrderEvent(ConsumerRecord<String, String> record) throws JsonProcessingException {

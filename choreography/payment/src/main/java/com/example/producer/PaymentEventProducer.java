@@ -1,5 +1,6 @@
 package com.example.producer;
 
+import com.example.constant.KafkaTopics;
 import com.example.producer.event.PaymentMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -11,6 +12,6 @@ public class PaymentEventProducer {
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
     public void publishPaymentCreated(PaymentMessage message) {
-        kafkaTemplate.send("payment-events", message.type(), message);
+        kafkaTemplate.send(KafkaTopics.PAYMENT_EVENTS, message.type(), message);
     }
 }

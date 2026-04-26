@@ -1,5 +1,6 @@
 package com.example.consumer;
 
+import com.example.constant.KafkaTopics;
 import com.example.consumer.event.EventMessage;
 import com.example.consumer.event.InventoryEventFailed;
 import com.example.service.OrderService;
@@ -21,7 +22,7 @@ public class InventoryEventListener {
     private final OrderService orderService;
 
     @KafkaListener(
-        topics = "inventory-events",
+        topics = KafkaTopics.INVENTORY_EVENTS,
         groupId = "order-service"
     )
     public void handleInventoryEvent(ConsumerRecord<String, String> record) throws JsonProcessingException {

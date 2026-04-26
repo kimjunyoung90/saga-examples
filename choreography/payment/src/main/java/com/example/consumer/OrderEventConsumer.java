@@ -1,5 +1,6 @@
 package com.example.consumer;
 
+import com.example.constant.KafkaTopics;
 import com.example.consumer.event.EventMessage;
 import com.example.consumer.event.OrderCreatedEvent;
 import com.example.dto.PaymentRequest;
@@ -19,7 +20,7 @@ public class OrderEventConsumer {
     private final PaymentService paymentService;
 
     @KafkaListener(
-            topics = "order-events",
+            topics = KafkaTopics.ORDER_EVENTS,
             groupId = "payment-service"
     )
     public void handleOrderEvent(ConsumerRecord<String, String> record) throws JsonProcessingException {
