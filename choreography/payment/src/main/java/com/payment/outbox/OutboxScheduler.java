@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.header.internals.RecordHeader;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -24,6 +25,9 @@ public class OutboxScheduler {
 
     private final OutboxMessageRepository outboxMessageRepository;
     private final KafkaTemplate<String, String> kafkaTemplate;
+
+    @Value("${outbox.max-retry-count:5}")
+    private int maxRetryCount;
 
     @Scheduled(fixedDelayString = "${outbox.poll-interval-ms:500}")
     @Transactional
@@ -50,8 +54,20 @@ public class OutboxScheduler {
                 kafkaTemplate.send(record).get();
                 message.markPublished();
             } catch (Exception e) {
-                log.error("Failed to publish outbox message id={}, will retry", message.getId(), e);
+                handlePublishFailure(message, e);
             }
+        }
+    }
+
+    private void handlePublishFailure(OutboxMessage message, Exception e) {
+        message.recordFailure(e.getMessage());
+        if (message.getRetryCount() >= maxRetryCount) {
+            message.markFailed();
+            log.error("Outbox message permanently failed (retries={}): id={}, messageId={}",
+                    message.getRetryCount(), message.getId(), message.getMessageId(), e);
+        } else {
+            log.warn("Outbox publish failed (attempt {}/{}): id={}, messageId={}",
+                    message.getRetryCount(), maxRetryCount, message.getId(), message.getMessageId(), e);
         }
     }
 }

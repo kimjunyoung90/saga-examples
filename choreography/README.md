@@ -218,18 +218,74 @@ sequenceDiagram
 
 | 컴포넌트 | 위치 | 역할 |
 |---------|------|------|
-| `OutboxMessage` | `outbox/` | 발행 대기 이벤트 엔티티 (PENDING/PUBLISHED) |
+| `OutboxMessage` | `outbox/` | 발행 대기 이벤트 엔티티 (PENDING / PUBLISHED / FAILED) |
 | `OutboxService` | `outbox/` | 비즈니스 트랜잭션 내에서 outbox 행 적재 (`Propagation.MANDATORY`) |
-| `OutboxScheduler` | `outbox/` | 500ms 주기 폴링 발행 (`@Scheduled`) |
+| `OutboxScheduler` | `outbox/` | 500ms 주기 폴링 발행 (`@Scheduled`), 재시도/DLQ 처리 |
 | `ProcessedEvent` | `idempotency/` | 처리 완료 messageId 기록 |
 | `IdempotencyService` | `idempotency/` | 중복 체크 / 처리 마킹 |
+| `KafkaConsumerConfig` | `config/` | 컨슈머 측 재시도 + DLT 발행 핸들러 |
+
+## 실패 처리 — DLQ + 재시도
+
+이벤트 처리는 두 지점에서 실패할 수 있습니다 (발행 / 소비). 각각 다른 메커니즘으로 격리합니다.
+
+### 발행 측 실패 — Outbox FAILED 상태 (DB 기반 DLQ)
+
+스케줄러가 Kafka로 발행하다 실패하면 outbox 행에 실패 정보를 누적합니다.
+
+| 컬럼 | 역할 |
+|------|------|
+| `retryCount` | 발행 시도 횟수 |
+| `lastAttemptAt` | 마지막 시도 시각 |
+| `lastError` | 마지막 실패 메시지 (1000자 절단) |
+
+```
+[PENDING] → 발행 시도 → 성공 → [PUBLISHED]
+                     ↓ 실패
+                     → retryCount++
+                     ↓ retryCount < max
+                     → [PENDING] (다음 폴링에서 재시도)
+                     ↓ retryCount >= max
+                     → [FAILED] (더 이상 폴링 대상 아님)
+```
+
+- 기본값 `outbox.max-retry-count=5` (application.yml로 오버라이드 가능)
+- `FAILED` 행은 폴러 쿼리에서 제외돼 무한 루프 방지
+- 운영 단계에서 `SELECT * FROM outbox_messages WHERE status = 'FAILED'`로 수동 분석/복구
+
+### 소비 측 실패 — DLT (Dead Letter Topic)
+
+컨슈머 트랜잭션이 실패하면 Kafka가 재전달합니다. Spring Kafka의 `DefaultErrorHandler`로 정책을 지정합니다.
+
+```
+event 도착 → @KafkaListener 처리 → 성공 → offset commit
+                                ↓ 실패
+                                → 1초 후 재전달 (offset 미커밋)
+                                ↓ 3회 모두 실패
+                                → DLT 토픽으로 발행 (`<topic>.DLT`)
+                                → offset 전진
+```
+
+- 기본값: `consumer.retry.interval-ms=1000`, `consumer.retry.max-attempts=3`
+- DLT 토픽: 원본 토픽명 + `.DLT` 접미사 (예: `order-events.DLT`)
+- DLT는 별도 컨슈머가 없는 격리 영역 — 운영자가 분석 후 수동 재처리
+
+### 두 메커니즘이 함께 풀어주는 시나리오
+
+| 장애 상황 | Outbox 측 | DLT 측 |
+|----------|----------|--------|
+| Kafka 일시 장애 | PENDING 유지 후 자동 재시도 | (해당 없음) |
+| Kafka 영구 불가 | FAILED 마킹 (5회 후) | (해당 없음) |
+| 컨슈머 비즈니스 로직 일시 오류 | (해당 없음) | 1초 간격 3회 재시도 후 통과 또는 DLT |
+| 컨슈머 처리 불가능한 메시지 (poison pill) | (해당 없음) | 3회 후 DLT로 격리 → 다음 메시지 처리 진행 |
 
 ### 알려진 한계 (개선 여지)
 
 - **폴링 지연**: 기본 500ms. 실시간성이 더 필요하면 Debezium CDC로 대체 가능
 - **단일 인스턴스 가정**: 다중 인스턴스 폴러는 `SELECT ... FOR UPDATE SKIP LOCKED` 등 락 필요
-- **무한 재시도**: 발행 실패 시 영구 재시도. 운영 환경에선 retryCount + DLQ 패턴 추가 필요
+- **고정 backoff**: 현재 컨슈머는 `FixedBackOff`. 운영에선 `ExponentialBackOff` + jitter 권장
 - **PUBLISHED 누적**: 오래된 published 행은 별도 정리 작업 필요
+- **DLT 모니터링 부재**: 격리된 메시지의 알림/대시보드는 미구현
 
 ## 실행 방법
 

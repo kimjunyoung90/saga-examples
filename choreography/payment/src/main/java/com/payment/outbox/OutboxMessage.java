@@ -15,6 +15,8 @@ import java.time.LocalDateTime;
 @Builder
 public class OutboxMessage {
 
+    private static final int MAX_ERROR_LENGTH = 1000;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -44,13 +46,40 @@ public class OutboxMessage {
 
     private LocalDateTime publishedAt;
 
+    @Column(nullable = false)
+    private int retryCount;
+
+    private LocalDateTime lastAttemptAt;
+
+    @Column(length = MAX_ERROR_LENGTH)
+    private String lastError;
+
     public void markPublished() {
         this.status = OutboxStatus.PUBLISHED;
         this.publishedAt = LocalDateTime.now();
     }
 
+    public void recordFailure(String error) {
+        this.retryCount++;
+        this.lastAttemptAt = LocalDateTime.now();
+        this.lastError = truncate(error);
+    }
+
+    public void markFailed() {
+        this.status = OutboxStatus.FAILED;
+        this.lastAttemptAt = LocalDateTime.now();
+    }
+
+    private static String truncate(String error) {
+        if (error == null) {
+            return null;
+        }
+        return error.length() <= MAX_ERROR_LENGTH ? error : error.substring(0, MAX_ERROR_LENGTH);
+    }
+
     public enum OutboxStatus {
         PENDING,
-        PUBLISHED
+        PUBLISHED,
+        FAILED
     }
 }
