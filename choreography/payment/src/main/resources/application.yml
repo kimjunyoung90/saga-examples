@@ -18,6 +18,7 @@ spring:
 
     listener:
       type: batch
+      ack-mode: MANUAL
 
     consumer:
       group-id: payment-service

@@ -20,6 +20,7 @@ spring:
 
     listener:
       type: batch
+      ack-mode: MANUAL
 
     consumer:
       group-id: inventory-service

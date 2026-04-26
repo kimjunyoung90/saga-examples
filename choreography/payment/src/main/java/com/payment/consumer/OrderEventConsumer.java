@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.listener.BatchListenerFailedException;
+import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -21,7 +22,7 @@ public class OrderEventConsumer {
             topics = KafkaTopics.ORDER_EVENTS,
             groupId = "payment-service"
     )
-    public void handleOrderEvent(List<ConsumerRecord<String, String>> records) {
+    public void handleOrderEvent(List<ConsumerRecord<String, String>> records, Acknowledgment ack) {
         log.info("Received {} order events in batch", records.size());
         for (int i = 0; i < records.size(); i++) {
             try {
@@ -30,5 +31,6 @@ public class OrderEventConsumer {
                 throw new BatchListenerFailedException("Failed at index " + i, e, i);
             }
         }
+        ack.acknowledge();
     }
 }
