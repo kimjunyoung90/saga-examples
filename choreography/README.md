@@ -155,7 +155,7 @@ sequenceDiagram
 
 ### 문제: 비즈니스 상태와 이벤트 발행이 어긋날 수 있다
 
-`@Transactional`은 DB 안에서만 원자성을 보장합니다. Kafka 발행은 별개 시스템이라 다음 어긋남이 발생할 수 있습니다.
+`@Transactional`은 DB 안에서만 원자성을 보장합니다. Kafka 메시지 발행은 외부 시스템이라 다음과 같은 문제가 발생할 수 있습니다.
 
 | 시나리오 | 어떻게 발생하나 | 결과 |
 |---------|---------------|------|
@@ -165,9 +165,7 @@ sequenceDiagram
 
 ### 해결: Transactional Outbox Pattern 도입
 
-핵심 아이디어: **"두 시스템에 쓰기"를 "한 시스템(DB)에 쓰기 + 비동기 전파"로 바꾼다.**
-
-서비스는 Kafka에 직접 발행하지 않고 **자기 DB의 `outbox_messages` 테이블에 이벤트를 INSERT**합니다. 비즈니스 엔티티 변경과 outbox INSERT가 같은 DB 트랜잭션 안에 있으니 원자적으로 commit됩니다. 실제 Kafka 발행은 별도 스케줄러가 PENDING 행을 폴링해서 처리합니다.
+서비스는 Kafka에 직접 발행하지 않고 **DB의 `outbox_messages` 테이블에 이벤트를 INSERT**합니다. 비즈니스 엔티티 변경과 outbox INSERT가 같은 DB 트랜잭션 안에 있으니 원자적으로 commit됩니다. 실제 Kafka 발행은 별도 스케줄러가 PENDING 행을 폴링해서 처리합니다.
 
 ```mermaid
 sequenceDiagram
@@ -190,7 +188,7 @@ sequenceDiagram
     end
 ```
 
-**위 세 시나리오가 어떻게 풀리는가:**
+**위 세 시나리오가 어떻게 해결되는가?**
 - **시나리오 A 해결**: 트랜잭션이 rollback되면 outbox 행도 함께 사라져 유령 이벤트 발생 안 함
 - **시나리오 B 해결**: 발행 실패 시 PENDING 상태로 남아 다음 폴링에서 자동 재시도 → 메시지 유실 없음
 - **시나리오 C 해결**: 사용자 요청 처리는 DB에만 의존 — Kafka 다운 중에도 주문 받기 정상 동작 (outbox에 누적 후 복구 시 발행)
@@ -227,7 +225,7 @@ sequenceDiagram
 
 ## DLQ
 
-이벤트 처리는 두 지점에서 실패할 수 있습니다 (발행 / 소비). 각각 다른 메커니즘으로 격리합니다.
+이벤트 처리는 두 지점에서 실패할 수 있습니다 (발행 / 소비).
 
 ### 메시지 발행 실패
 `DLQ` 라우팅 (무한 재시도 방지)
@@ -269,11 +267,10 @@ sequenceDiagram
 
 ### 알려진 한계 (개선 여지)
 
-- **폴링 지연**: 기본 500ms. 실시간성이 더 필요하면 Debezium CDC로 대체 가능
-- **단일 인스턴스 가정**: 다중 인스턴스 폴러는 `SELECT ... FOR UPDATE SKIP LOCKED` 등 락 필요
+- **폴링 지연**: 기본 500ms. 실시간성이 더 필요하면오 CDC로 대체 가능
+- **단일 인스턴스 가정**: 다중 인스턴스 스케쥴러는 락 필요
 - **고정 backoff**: 현재 컨슈머는 `FixedBackOff`. 운영에선 `ExponentialBackOff` + jitter 권장
 - **PUBLISHED 누적**: 오래된 published 행은 별도 정리 작업 필요
-- **DLT 모니터링 부재**: 격리된 메시지의 알림/대시보드는 미구현
 
 ## 실행 방법
 
