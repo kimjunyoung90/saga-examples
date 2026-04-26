@@ -1,26 +1,12 @@
 package com.inventory.consumer;
 
 import com.inventory.constant.KafkaTopics;
-import com.inventory.consumer.event.EventMessage;
-import com.inventory.consumer.event.OrderCreatedEvent;
-import com.inventory.dto.InventoryRequest;
-import com.inventory.idempotency.IdempotencyService;
-import com.inventory.idempotency.MessageHeaders;
-import com.inventory.outbox.OutboxService;
-import com.inventory.producer.event.InventoryCreated;
-import com.inventory.producer.event.InventoryMessage;
-import com.inventory.producer.event.MessageType;
-import com.inventory.service.InventoryService;
-import com.inventory.service.ReserveResult;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.listener.BatchListenerFailedException;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -28,67 +14,21 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 public class OrderEventListener {
-    private final ObjectMapper objectMapper;
-    private final InventoryService inventoryService;
-    private final OutboxService outboxService;
-    private final IdempotencyService idempotencyService;
+
+    private final OrderEventProcessor processor;
 
     @KafkaListener(
             topics = KafkaTopics.ORDER_EVENTS,
             groupId = "inventory-service"
     )
-    @Transactional(rollbackFor = Exception.class)
-    public void handleOrderEvent(List<ConsumerRecord<String, String>> records) throws JsonProcessingException {
+    public void handleOrderEvent(List<ConsumerRecord<String, String>> records) {
         log.info("Received {} order events in batch", records.size());
-        for (ConsumerRecord<String, String> record : records) {
-            String messageId = MessageHeaders.extractMessageId(record);
-            if (idempotencyService.isDuplicate(messageId)) {
-                log.info("Skip duplicate order event messageId={}", messageId);
-                continue;
+        for (int i = 0; i < records.size(); i++) {
+            try {
+                processor.process(records.get(i));
+            } catch (Exception e) {
+                throw new BatchListenerFailedException("Failed at index " + i, e, i);
             }
-
-            EventMessage message = objectMapper.readValue(record.value(), EventMessage.class);
-            switch (message.type()) {
-                case ORDER_CREATED -> handleOrderCreatedEvent(message.payload());
-            }
-
-            idempotencyService.markProcessed(messageId, message.type().name());
         }
-    }
-
-    private void handleOrderCreatedEvent(JsonNode payload) throws JsonProcessingException {
-        OrderCreatedEvent orderCreatedEvent = objectMapper.readValue(payload.toString(), OrderCreatedEvent.class);
-        InventoryRequest inventoryRequest = InventoryRequest.builder()
-                .orderId(orderCreatedEvent.orderId())
-                .productId(orderCreatedEvent.productId())
-                .quantity(orderCreatedEvent.quantity())
-                .build();
-
-        ReserveResult result = inventoryService.reserve(inventoryRequest);
-        if (!result.isSuccess()) {
-            log.warn("Insufficient inventory for orderId={}", orderCreatedEvent.orderId());
-            publishInventoryFailed(orderCreatedEvent);
-        }
-    }
-
-    private void publishInventoryFailed(OrderCreatedEvent orderCreatedEvent) {
-        InventoryCreated failedPayload = InventoryCreated.builder()
-                .orderId(orderCreatedEvent.orderId())
-                .inventoryId(null)
-                .productId(orderCreatedEvent.productId())
-                .status("FAILED")
-                .build();
-
-        InventoryMessage envelope = InventoryMessage.builder()
-                .type(MessageType.INVENTORY_FAILED.name())
-                .payload(failedPayload)
-                .build();
-
-        outboxService.record(
-                KafkaTopics.INVENTORY_EVENTS,
-                MessageType.INVENTORY_FAILED.name(),
-                String.valueOf(orderCreatedEvent.orderId()),
-                envelope
-        );
     }
 }

@@ -1,21 +1,12 @@
 package com.payment.consumer;
 
 import com.payment.constant.KafkaTopics;
-import com.payment.consumer.event.EventMessage;
-import com.payment.consumer.event.OrderCreatedEvent;
-import com.payment.dto.PaymentRequest;
-import com.payment.idempotency.IdempotencyService;
-import com.payment.idempotency.MessageHeaders;
-import com.payment.service.PaymentService;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.listener.BatchListenerFailedException;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -23,40 +14,21 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 public class OrderEventConsumer {
-    private final ObjectMapper objectMapper;
-    private final PaymentService paymentService;
-    private final IdempotencyService idempotencyService;
+
+    private final OrderEventProcessor processor;
 
     @KafkaListener(
             topics = KafkaTopics.ORDER_EVENTS,
             groupId = "payment-service"
     )
-    @Transactional(rollbackFor = Exception.class)
-    public void handleOrderEvent(List<ConsumerRecord<String, String>> records) throws JsonProcessingException {
+    public void handleOrderEvent(List<ConsumerRecord<String, String>> records) {
         log.info("Received {} order events in batch", records.size());
-        for (ConsumerRecord<String, String> record : records) {
-            String messageId = MessageHeaders.extractMessageId(record);
-            if (idempotencyService.isDuplicate(messageId)) {
-                log.info("Skip duplicate order event messageId={}", messageId);
-                continue;
+        for (int i = 0; i < records.size(); i++) {
+            try {
+                processor.process(records.get(i));
+            } catch (Exception e) {
+                throw new BatchListenerFailedException("Failed at index " + i, e, i);
             }
-
-            EventMessage eventMessage = objectMapper.readValue(record.value(), EventMessage.class);
-            switch (eventMessage.type()) {
-                case ORDER_CREATED -> handleOrderCreatedEvent(eventMessage.payload());
-            }
-
-            idempotencyService.markProcessed(messageId, eventMessage.type().name());
         }
-    }
-
-    private void handleOrderCreatedEvent(JsonNode payload) throws JsonProcessingException {
-        OrderCreatedEvent orderCreatedEvent = objectMapper.readValue(payload.toString(), OrderCreatedEvent.class);
-        PaymentRequest paymentRequest = PaymentRequest.builder()
-                .orderId(orderCreatedEvent.orderId())
-                .userId(orderCreatedEvent.userId())
-                .amount(orderCreatedEvent.amount())
-                .build();
-        paymentService.create(paymentRequest);
     }
 }
