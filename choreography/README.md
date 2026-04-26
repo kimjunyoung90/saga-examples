@@ -223,17 +223,6 @@ sequenceDiagram
     end
 ```
 
-### 핵심 컴포넌트
-
-| 컴포넌트 | 위치 | 역할 |
-|---------|------|------|
-| `OutboxMessage` | `outbox/` | 발행 대기 이벤트 엔티티 (PENDING / PUBLISHED / FAILED) |
-| `OutboxService` | `outbox/` | 비즈니스 트랜잭션 내에서 outbox 행 적재 (`Propagation.MANDATORY`) |
-| `OutboxScheduler` | `outbox/` | 500ms 주기 폴링 발행 (`@Scheduled`), 재시도/DLQ 처리 |
-| `ProcessedEvent` | `idempotency/` | 처리 완료 messageId 기록 |
-| `IdempotencyService` | `idempotency/` | 중복 체크 / 처리 마킹 |
-| `KafkaConsumerConfig` | `config/` | 컨슈머 측 재시도 + DLT 발행 핸들러 |
-
 ## 실패 처리 — DLQ + 재시도
 
 이벤트 처리는 두 지점에서 실패할 수 있습니다 (발행 / 소비). 각각 다른 메커니즘으로 격리합니다.
