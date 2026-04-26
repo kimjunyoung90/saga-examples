@@ -31,7 +31,7 @@ public class OutboxScheduler {
 
     @Scheduled(fixedDelayString = "${outbox.poll-interval-ms:500}")
     @Transactional
-    public void publishPending() {
+    public void publishEvent() {
         List<OutboxMessage> pending = outboxMessageRepository.findByStatusOrderByCreatedAtAsc(
                 OutboxMessage.OutboxStatus.PENDING,
                 PageRequest.of(0, BATCH_SIZE)
