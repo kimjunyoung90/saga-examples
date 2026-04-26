@@ -44,7 +44,7 @@ public class OutboxScheduler {
             try {
                 ProducerRecord<String, String> record = new ProducerRecord<>(
                         message.getTopic(),
-                        null,
+                        null, //partition은 메시지 키 기반으로 자동 분배
                         message.getMessageKey(),
                         message.getPayload()
                 );
