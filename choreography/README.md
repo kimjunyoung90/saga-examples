@@ -229,9 +229,9 @@ sequenceDiagram
 
 이벤트 처리는 두 지점에서 실패할 수 있습니다 (발행 / 소비). 각각 다른 메커니즘으로 격리합니다.
 
-### 발행 측 실패 — Outbox FAILED 상태 (DB 기반 DLQ)
+### 발행 측 실패 — `<topic>.DLQ` 라우팅 (무한 재시도 방지)
 
-스케줄러가 Kafka로 발행하다 실패하면 outbox 행에 실패 정보를 누적합니다.
+스케줄러는 발행 실패 시 outbox 행에 시도 정보를 누적합니다.
 
 | 컬럼 | 역할 |
 |------|------|
@@ -239,19 +239,29 @@ sequenceDiagram
 | `lastAttemptAt` | 마지막 시도 시각 |
 | `lastError` | 마지막 실패 메시지 (1000자 절단) |
 
+`maxRetryCount` 도달 시 원본 행은 `FAILED`로 격리되고, **DLQ 토픽(`<원본>.DLQ`)으로 보낼 새 outbox 행이 같은 트랜잭션 안에서 INSERT** 됩니다 (dual write 방지).
+
 ```
-[PENDING] → 발행 시도 → 성공 → [PUBLISHED]
-                     ↓ 실패
-                     → retryCount++
-                     ↓ retryCount < max
-                     → [PENDING] (다음 폴링에서 재시도)
-                     ↓ retryCount >= max
-                     → [FAILED] (더 이상 폴링 대상 아님)
+[PENDING, topic=order-events] ── 발행 ──┬─성공─→ [PUBLISHED]
+                                     │
+                                     └─실패─→ retryCount++
+                                              ├─ < 5  → [PENDING] (다음 폴링에서 재시도)
+                                              └─ ≥ 5  → [FAILED]
+                                                       ↓ (같은 @Transactional)
+                                                       INSERT 새 outbox 행
+                                                       [PENDING, topic=order-events.DLQ]
+                                                       ↓ (다음 폴링)
+                                                       DLQ 토픽으로 발행 시도
+                                                       ├─성공─→ [PUBLISHED]
+                                                       └─실패 5회─→ [FAILED] (가드로 또 DLQ 안 만듦)
 ```
 
-- 기본값 `outbox.max-retry-count=5` (application.yml로 오버라이드 가능)
-- `FAILED` 행은 폴러 쿼리에서 제외돼 무한 루프 방지
-- 운영 단계에서 `SELECT * FROM outbox_messages WHERE status = 'FAILED'`로 수동 분석/복구
+**핵심 포인트**
+
+- DLQ 발행도 **outbox 메커니즘으로 처리** → markFailed + DLQ INSERT가 atomic
+- DLQ row 페이로드에 원본 컨텍스트(`originalTopic`, `retryCount`, `lastError`, `failedAt` 등)를 JSON 래퍼로 포함 → DLQ 메시지 하나만 봐도 트러블슈팅 가능
+- 무한 루프 가드: `topic.endsWith(".DLQ")` 체크로 DLQ row 자체가 또 실패해도 새 DLQ 안 만듦
+- 최후 안전망: DLQ 발행마저 5회 실패 → DB의 `FAILED` 상태로 영구 보관 → 운영자 수동 처리 (`SELECT * FROM outbox_messages WHERE status = 'FAILED'`)
 
 ### 소비 측 실패 — DLT (Dead Letter Topic)
 
@@ -272,10 +282,10 @@ event 도착 → @KafkaListener 처리 → 성공 → offset commit
 
 ### 두 메커니즘이 함께 풀어주는 시나리오
 
-| 장애 상황 | Outbox 측 | DLT 측 |
-|----------|----------|--------|
+| 장애 상황 | 발행 측 (`.DLQ`) | 소비 측 (`.DLT`) |
+|----------|-----------------|-----------------|
 | Kafka 일시 장애 | PENDING 유지 후 자동 재시도 | (해당 없음) |
-| Kafka 영구 불가 | FAILED 마킹 (5회 후) | (해당 없음) |
+| Kafka 영구 불가 | 5회 후 DLQ 라우팅 → DLQ 발행도 5회 실패 시 DB FAILED | (해당 없음) |
 | 컨슈머 비즈니스 로직 일시 오류 | (해당 없음) | 1초 간격 3회 재시도 후 통과 또는 DLT |
 | 컨슈머 처리 불가능한 메시지 (poison pill) | (해당 없음) | 3회 후 DLT로 격리 → 다음 메시지 처리 진행 |
 
