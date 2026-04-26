@@ -221,18 +221,6 @@ curl -X POST http://localhost:8081/orders \
 
 최종 상태: `CANCELED` (보상 트랜잭션 실행됨)
 
-## Choreography vs Orchestration
-
-| 특성 | Choreography | Orchestration |
-|-----|--------------|---------------|
-| 제어 방식 | 분산형 (각 서비스가 자율적) | 중앙 집중형 (Orchestrator) |
-| 결합도 | 낮음 (이벤트 기반) | 높음 (직접 호출) |
-| 복잡도 | 로직이 여러 서비스에 분산 | 로직이 한 곳에 집중 |
-| 디버깅 | 어려움 (흐름 추적 복잡) | 쉬움 (중앙 관리) |
-| 확장성 | 높음 | 보통 |
-| 가시성 | 낮음 | 높음 |
-| 적합한 경우 | 느슨한 결합, 높은 확장성 필요 | 명확한 흐름, 쉬운 관리 필요 |
-
 ## 참고 자료
 
 - [Microservices Patterns: Saga Pattern](https://microservices.io/patterns/data/saga.html)
