@@ -274,33 +274,41 @@ sequenceDiagram
 
 ## 실행 방법
 
-### 1. Kafka 실행
+Kafka, MySQL, 3개 서비스 모두 docker-compose로 한 번에 띄웁니다.
+
+### 1. JAR 빌드
+
 ```bash
 cd choreography
+./gradlew bootJar
+```
+
+### 2. docker-compose로 전체 실행
+
+```bash
 docker-compose up -d
 ```
 
-### 2. 각 서비스 실행
+이 명령으로 다음이 한 번에 뜹니다:
 
-**Order Service (Port 8081):**
+| 컨테이너 | 포트 |
+|---------|------|
+| `kafka` (KRaft 모드) | 9092 |
+| `mysql` (3개 DB 자동 생성: orderdb, inventorydb, paymentdb) | 3306 |
+| `order-service` | 8081 |
+| `inventory-service` | 8082 |
+| `payment-service` | 8083 |
+
+서비스들은 `kafka` 헬스체크 통과 후 자동으로 기동되고, MySQL도 마찬가지입니다.
+
+### 3. 종료
+
 ```bash
-cd order
-./gradlew bootRun
+docker-compose down       # 컨테이너만 정리
+docker-compose down -v    # 컨테이너 + 볼륨 함께 정리 (DB 초기화)
 ```
 
-**Inventory Service (Port 8082):**
-```bash
-cd inventory
-./gradlew bootRun
-```
-
-**Payment Service (Port 8083):**
-```bash
-cd payment
-./gradlew bootRun
-```
-
-### 3. Saga 테스트
+### 4. Saga 테스트
 
 **Success Case:**
 ```bash

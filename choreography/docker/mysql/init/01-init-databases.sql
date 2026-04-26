@@ -1,0 +1,8 @@
+CREATE DATABASE IF NOT EXISTS orderdb CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE IF NOT EXISTS inventorydb CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE IF NOT EXISTS paymentdb CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+GRANT ALL PRIVILEGES ON orderdb.* TO 'saga'@'%';
+GRANT ALL PRIVILEGES ON inventorydb.* TO 'saga'@'%';
+GRANT ALL PRIVILEGES ON paymentdb.* TO 'saga'@'%';
+FLUSH PRIVILEGES;
