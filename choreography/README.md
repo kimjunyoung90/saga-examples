@@ -151,9 +151,9 @@ sequenceDiagram
 | **재고 서비스** | `INVENTORY_RESERVED`, `INVENTORY_CONFIRMED`, `INVENTORY_FAILED` | `ORDER_CREATED`, `PAYMENT_APPROVED`, `PAYMENT_FAILED` |
 | **결제 서비스** | `PAYMENT_APPROVED`, `PAYMENT_FAILED` | `ORDER_CREATED` |
 
-## 신뢰성 보장 — Outbox 패턴과 컨슈머 멱등성
+## Outbox 패턴
 
-### 문제 1: 비즈니스 상태와 이벤트 발행이 어긋날 수 있다
+### 문제: 비즈니스 상태와 이벤트 발행이 어긋날 수 있다
 
 `@Transactional`은 DB 안에서만 원자성을 보장합니다. Kafka 발행은 별개 시스템이라 다음 어긋남이 발생할 수 있습니다.
 
@@ -195,7 +195,9 @@ sequenceDiagram
 - **시나리오 B 해결**: 발행 실패 시 PENDING 상태로 남아 다음 폴링에서 자동 재시도 → 메시지 유실 없음
 - **시나리오 C 해결**: 사용자 요청 처리는 DB에만 의존 — Kafka 다운 중에도 주문 받기 정상 동작 (outbox에 누적 후 복구 시 발행)
 
-### 문제 2: 컨슈머 중복 처리
+## 컨슈머 멱등성
+
+### 문제: 메시지가 중복 처리될 수 있다
 
 at-least-once 발행을 보장하기 위해 도입한 Outbox 패턴은 그 대가로 **메시지가 중복 발행될 수 있습니다** (예: 발행 ack 직전에 스케줄러가 죽으면 다음 사이클에 같은 행을 재발행). 메시지를 정확히 한 번만 처리하려면 컨슈머 측에서 멱등성을 보장해야 합니다.
 
@@ -223,7 +225,7 @@ sequenceDiagram
     end
 ```
 
-## 실패 처리 — DLQ + 재시도
+## DLQ
 
 이벤트 처리는 두 지점에서 실패할 수 있습니다 (발행 / 소비). 각각 다른 메커니즘으로 격리합니다.
 
