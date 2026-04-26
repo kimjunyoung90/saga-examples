@@ -153,20 +153,21 @@ sequenceDiagram
 
 ## 신뢰성 보장 — Outbox 패턴과 컨슈머 멱등성
 
-EDA에서 가장 까다로운 두 가지 문제를 풀기 위한 구조입니다.
+### 문제 1: 비즈니스 상태와 이벤트 발행이 어긋날 수 있다
 
-### 문제 1: Dual Write Problem
+`@Transactional`은 DB 안에서만 원자성을 보장합니다. Kafka 발행은 별개 시스템이라 다음 어긋남이 발생할 수 있습니다.
 
-`@Transactional` 안에서 DB 작업과 Kafka 발행을 함께 수행하면 두 시스템의 원자성이 보장되지 않습니다.
+| 시나리오 | 어떻게 발생하나 | 결과 |
+|---------|---------------|------|
+| **유령 이벤트** | 발행 성공 후 트랜잭션 rollback | DB는 사라졌는데 Kafka 메시지 잔존 |
+| **이벤트 유실** | 트랜잭션 commit 후 발행 실패 | DB는 commit됐는데 메시지 발행 안 됨 |
+| **요청 가용성 저하** | Kafka 다운 시 send() timeout → 트랜잭션 rollback | Kafka 장애가 사용자 요청 실패로 직결 |
 
-| 시나리오 | 결과 |
-|---------|------|
-| 발행 후 트랜잭션 rollback | DB 변경은 사라지지만 Kafka에 **유령 이벤트** 잔존 |
-| 트랜잭션 commit 후 발행 실패 | DB는 변경되었지만 Kafka 메시지가 **유실** |
+### 해결: Transactional Outbox Pattern 도입
 
-### 해결: Transactional Outbox Pattern
+핵심 아이디어: **"두 시스템에 쓰기"를 "한 시스템(DB)에 쓰기 + 비동기 전파"로 바꾼다.**
 
-서비스는 Kafka에 직접 발행하지 않고 **자기 DB의 `outbox_messages` 테이블에 이벤트를 INSERT**합니다. 비즈니스 엔티티 변경과 outbox INSERT가 같은 트랜잭션이라 원자적으로 commit 됩니다. 별도 스케줄러가 PENDING 행을 폴링해서 Kafka에 실제 발행하고 PUBLISHED로 마킹합니다.
+서비스는 Kafka에 직접 발행하지 않고 **자기 DB의 `outbox_messages` 테이블에 이벤트를 INSERT**합니다. 비즈니스 엔티티 변경과 outbox INSERT가 같은 DB 트랜잭션 안에 있으니 원자적으로 commit됩니다. 실제 Kafka 발행은 별도 스케줄러가 PENDING 행을 폴링해서 처리합니다.
 
 ```mermaid
 sequenceDiagram
@@ -189,8 +190,10 @@ sequenceDiagram
     end
 ```
 
-- 트랜잭션이 rollback되면 outbox 행도 함께 사라짐 → 유령 이벤트 방지
-- 발행 실패 시 PENDING 상태로 남아 다음 폴링에서 자동 재시도 → 메시지 유실 방지
+**위 세 시나리오가 어떻게 풀리는가:**
+- **시나리오 A 해결**: 트랜잭션이 rollback되면 outbox 행도 함께 사라져 유령 이벤트 발생 안 함
+- **시나리오 B 해결**: 발행 실패 시 PENDING 상태로 남아 다음 폴링에서 자동 재시도 → 메시지 유실 없음
+- **시나리오 C 해결**: 사용자 요청 처리는 DB에만 의존 — Kafka 다운 중에도 주문 받기 정상 동작 (outbox에 누적 후 복구 시 발행)
 
 ### 문제 2: 컨슈머 중복 처리
 
