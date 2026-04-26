@@ -267,7 +267,7 @@ sequenceDiagram
 
 ### 알려진 한계 (개선 여지)
 
-- **폴링 지연**: 기본 500ms. 실시간성이 더 필요하면오 CDC로 대체 가능
+- **폴링 지연**: 기본 500ms. 실시간성이 더 필요하면 CDC로 대체 가능
 - **단일 인스턴스 가정**: 다중 인스턴스 스케쥴러는 락 필요
 - **고정 backoff**: 현재 컨슈머는 `FixedBackOff`. 운영에선 `ExponentialBackOff` + jitter 권장
 - **PUBLISHED 누적**: 오래된 published 행은 별도 정리 작업 필요
