@@ -1,6 +1,6 @@
 package com.inventory.dto;
 
-public record InventoryCancelRequest(
+public record InventoryConfirmRequest(
         Long orderId
 ) {
 }

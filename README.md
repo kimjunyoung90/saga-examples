@@ -19,10 +19,11 @@ MSA 분산 트랜잭션 Saga 패턴 구현 예제
 
 ## 시나리오
 1. 고객이 상품 구매를 요청한다.
-2. 주문 서비스에서는 구매 주문을 기록 한다.
-3. 재고 서비스에서 물품 재고를 확보한다.
+2. 주문 서비스에서 구매 주문을 기록한다.
+3. 재고 서비스에서 물품 재고를 **예약**한다 (available → reserved).
 4. 결제 서비스에서 결제 처리를 진행한다.
-5. 결제가 끝나면 주문을 승인 상태로 수정한다.
+5. 결제 성공 시 재고 예약을 **확정**한다 (reserved → 영구 차감).
+6. 주문을 승인 상태로 수정한다.
 
 ```mermaid
 sequenceDiagram
@@ -31,35 +32,22 @@ sequenceDiagram
     participant IS as 📦 재고 서비스
     participant PS as 💳 결제 서비스
 
-    title 상품 구매 프로세스
-
-    %% --- 성공 흐름 (왼쪽) ---
-        Client->> OS: 구매 요청
-        activate Client
-    
-        activate OS
-        OS->>OS: 1. 주문 생성
-        OS->>IS: 2. 재고 확보
-        deactivate OS
-
-        activate IS
-        IS->>IS: 2. 재고 차감/예약
-        IS->>PS: 3. 결제 요청
-        deactivate IS
-        
-        activate PS
-        PS->>PS: 3. 결제 처리
-        PS->>OS: 4. 승인 처리
-        deactivate PS
-        
-        activate OS
-        OS->>OS: 5. 주문 성공
-        OS->>Client: 6. 응답
-        deactivate OS
-        
-        
-        deactivate Client
+    Client->>+OS: 1. 구매 요청
+    OS->>OS: 주문 생성 (PENDING)
+    OS->>+IS: 2. 재고 예약 요청
+    IS->>IS: available--, reserved++
+    IS-->>-OS: 예약 성공
+    OS->>+PS: 3. 결제 요청
+    PS->>PS: 결제 처리 (APPROVED)
+    PS-->>-OS: 결제 성공
+    OS->>+IS: 4. 재고 확정 요청
+    IS->>IS: reserved-- (영구 차감)
+    IS-->>-OS: 확정 성공
+    OS->>OS: 5. 주문 승인 (APPROVED)
+    OS-->>-Client: 6. 응답
 ```
+
+> **재고 도메인 모델**: `available`(예약 가능) / `reserved`(예약됨, 확정 전)을 분리하고 `InventoryReservation` 엔티티로 orderId 단위 예약을 추적합니다. e-commerce 표준 패턴이며 부분 취소, 만료, 정확한 취소를 지원합니다.
 
 ## 주요 포인트
 

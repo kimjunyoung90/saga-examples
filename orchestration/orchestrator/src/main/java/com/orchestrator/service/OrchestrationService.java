@@ -3,6 +3,8 @@ package com.orchestrator.service;
 import com.orchestrator.client.InventoryWebClient;
 import com.orchestrator.client.OrderWebClient;
 import com.orchestrator.client.PaymentWebClient;
+import com.orchestrator.dto.request.InventoryCancelRequest;
+import com.orchestrator.dto.request.InventoryConfirmRequest;
 import com.orchestrator.dto.request.InventoryRequest;
 import com.orchestrator.dto.request.OrderRequest;
 import com.orchestrator.dto.request.PaymentRequest;
@@ -32,8 +34,8 @@ public class OrchestrationService {
             OrderResponse orderResponse = orderClient.createOrder(request).block();
             orderId = orderResponse.orderId();
 
-            //2. 재고 차감
-            InventoryRequest inventoryRequest = new InventoryRequest(orderResponse.productId(), orderResponse.quantity());
+            //2. 재고 예약
+            InventoryRequest inventoryRequest = new InventoryRequest(orderId, orderResponse.productId(), orderResponse.quantity());
             inventoryClient.reserveInventory(inventoryRequest).block();
 
             //3. 결제 처리
@@ -42,7 +44,10 @@ public class OrchestrationService {
             PaymentRequest paymentRequest = new PaymentRequest(orderId, userId, totalAmount);
             paymentClient.createPayment(paymentRequest).block();
 
-            //4. 주문 확정 처리
+            //4. 재고 예약 확정 (영구 차감)
+            inventoryClient.confirmInventory(new InventoryConfirmRequest(orderId)).block();
+
+            //5. 주문 확정 처리
             orderClient.approveOrder(orderId).block();
 
         } catch (OrderFailedException orderFailedException) {
@@ -52,14 +57,13 @@ public class OrchestrationService {
             orderClient.cancelOrder(orderId).block();
             return "FAILED_INVENTORY";
         } catch (PaymentFailedException paymentFailedException) {
-            //1. 재고 원복
-            inventoryClient.cancelInventory(new InventoryRequest(request.productId(), request.quantity())).block();
+            //1. 재고 예약 취소 (orderId 기반으로 정확히 매칭)
+            inventoryClient.cancelInventory(new InventoryCancelRequest(orderId)).block();
 
             //2. 주문 취소
             orderClient.cancelOrder(orderId).block();
             return "FAILED_PAYMENT";
         } catch (Exception e) {
-            //로그 적재
             log.error("기타 오류 : {}", e.getMessage());
         }
 

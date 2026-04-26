@@ -23,23 +23,25 @@ Orchestrator가 모든 트랜잭션을 조정합니다:
 ```java
 public String orderSagaTransaction(OrderRequest request) {
     Long orderId = null;
-
     try {
         // Step 1: Create Order
         OrderResponse orderResponse = orderClient.createOrder(request).block();
+        orderId = orderResponse.orderId();
 
-        // Step 2: Reserve Inventory
-        InventoryRequest inventoryRequest = new InventoryRequest(orderResponse.productId(), orderResponse.quantity());
+        // Step 2: Reserve Inventory (available -> reserved)
+        InventoryRequest inventoryRequest = new InventoryRequest(orderId, orderResponse.productId(), orderResponse.quantity());
         inventoryClient.reserveInventory(inventoryRequest).block();
 
         // Step 3: Process Payment
-        orderId = orderResponse.orderId();
         Long userId = orderResponse.userId();
         BigDecimal totalAmount = new BigDecimal(orderResponse.quantity()).multiply(orderResponse.price());
         PaymentRequest paymentRequest = new PaymentRequest(orderId, userId, totalAmount);
         paymentClient.createPayment(paymentRequest).block();
 
-        // Step 4: Approve Order
+        // Step 4: Confirm Inventory Reservation (reserved -> permanently deducted)
+        inventoryClient.confirmInventory(new InventoryConfirmRequest(orderId)).block();
+
+        // Step 5: Approve Order
         orderClient.approveOrder(orderId).block();
 
         return "SUCCESS";
@@ -53,13 +55,45 @@ public String orderSagaTransaction(OrderRequest request) {
         return "FAILED_INVENTORY";
 
     } catch (PaymentFailedException e) {
-        // Compensate: Cancel Inventory and Order
-        inventoryClient.cancelInventory(new InventoryRequest(request.productId(), request.quantity())).block();
+        // Compensate: Cancel Reservation (by orderId) + Cancel Order
+        inventoryClient.cancelInventory(new InventoryCancelRequest(orderId)).block();
         orderClient.cancelOrder(orderId).block();
         return "FAILED_PAYMENT";
     }
 }
 ```
+
+## 재고 도메인 모델 — 두 단계 예약
+
+재고는 **예약(reserve) → 확정(confirm) / 취소(cancel)** 의 두 단계로 관리됩니다. e-commerce 도메인 표준 패턴이며, choreography 모듈과 동일한 설계.
+
+```java
+class Inventory {
+    int availableQuantity;   // 예약 가능
+    int reservedQuantity;    // 예약됐지만 확정 전
+}
+
+class InventoryReservation {
+    Long orderId;            // unique
+    Long productId;
+    int quantity;
+    ReservationStatus status; // RESERVED / CONFIRMED / CANCELED
+    LocalDateTime createdAt, confirmedAt, canceledAt;
+}
+```
+
+### 상태 전이
+
+```
+reserve()  → available--, reserved++, Reservation(RESERVED) 생성
+confirm()  → reserved-- (영구 차감), Reservation(CONFIRMED)
+cancelByOrderId() → reserved--, available++ (복원), Reservation(CANCELED)
+```
+
+### 핵심 가치
+- **누가 예약했는지 추적**: orderId 기반으로 정확히 매칭 (productId+quantity 추정 X)
+- **부분 취소 가능**: reservation 단위로 격리
+- **중복 cancel/confirm 방어**: status 체크로 비즈니스 멱등성
 
 ### Saga 테스트
 
@@ -117,15 +151,19 @@ sequenceDiagram
     Order->>Order: 주문 생성 (PENDING)
     Order-->>-O: OrderResponse
 
-    O->>+Inv: 2. POST /inventory/deduct
-    Inv->>Inv: 재고 차감
+    O->>+Inv: 2. POST /inventory/reserve
+    Inv->>Inv: 재고 예약 (available--, reserved++)
     Inv-->>-O: InventoryResponse
 
     O->>+Pay: 3. POST /payments
     Pay->>Pay: 결제 처리 (APPROVED)
     Pay-->>-O: PaymentResponse
 
-    O->>+Order: 4. PUT /orders/{id}/approve
+    O->>+Inv: 4. POST /inventory/confirm
+    Inv->>Inv: 예약 확정 (reserved--, 영구 차감)
+    Inv-->>-O: InventoryResponse
+
+    O->>+Order: 5. PUT /orders/{id}/approve
     Order->>Order: 주문 확정 (APPROVED)
     Order-->>-O: Success
 
@@ -149,7 +187,7 @@ sequenceDiagram
     Order->>Order: 주문 생성 (PENDING)
     Order-->>-O: OrderResponse
 
-    O->>+Inv: 2. POST /inventory/deduct
+    O->>+Inv: 2. POST /inventory/reserve
     Inv->>Inv: 재고 확인
     Note over Inv: 재고 부족!
     Inv-->>-O: InventoryFailedException
@@ -182,8 +220,8 @@ sequenceDiagram
     Order->>Order: 주문 생성 (PENDING)
     Order-->>-O: OrderResponse
 
-    O->>+Inv: 2. POST /inventory/deduct
-    Inv->>Inv: 재고 차감 성공
+    O->>+Inv: 2. POST /inventory/reserve
+    Inv->>Inv: 재고 예약 성공 (available--, reserved++)
     Inv-->>-O: InventoryResponse
 
     O->>+Pay: 3. POST /payments
@@ -194,8 +232,8 @@ sequenceDiagram
 
     Note over O: 보상 트랜잭션 시작
     rect rgb(255, 200, 200)
-        O->>+Inv: POST /inventory/cancel
-        Inv->>Inv: 재고 원복
+        O->>+Inv: POST /inventory/cancel (orderId)
+        Inv->>Inv: 예약 취소 (reserved--, available++)
         Inv-->>-O: Success
 
         O->>+Order: PUT /orders/{id}/cancel
@@ -212,23 +250,25 @@ sequenceDiagram
 ```mermaid
 graph LR
     A[주문 요청] --> B{1. 주문 생성}
-    B -->|성공| C{2. 재고 차감}
+    B -->|성공| C{2. 재고 예약}
     B -->|실패| Z[FAILED_ORDER]
 
     C -->|성공| D{3. 결제 처리}
     C -->|실패| E[보상: 주문 취소]
     E --> Y[FAILED_INVENTORY]
 
-    D -->|성공| F[4. 주문 확정]
-    D -->|실패| G[보상: 재고 원복]
+    D -->|성공| F2{4. 재고 확정}
+    D -->|실패| G[보상: 예약 취소]
     G --> H[보상: 주문 취소]
     H --> X[FAILED_PAYMENT]
 
+    F2 -->|성공| F[5. 주문 확정]
     F --> W[SUCCESS]
 
     style B fill:#4ecdc4
     style C fill:#96ceb4
     style D fill:#45b7d1
+    style F2 fill:#a3d8c1
     style F fill:#95e1d3
     style E fill:#ff6b6b
     style G fill:#ff6b6b

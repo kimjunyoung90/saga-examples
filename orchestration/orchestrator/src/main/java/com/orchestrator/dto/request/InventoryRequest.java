@@ -1,4 +1,4 @@
 package com.orchestrator.dto.request;
 
-public record InventoryRequest(Long productId, Integer quantity) {
+public record InventoryRequest(Long orderId, Long productId, Integer quantity) {
 }

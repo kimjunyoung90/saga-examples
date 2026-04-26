@@ -19,16 +19,35 @@ public class Inventory {
     private Long productId;
 
     @Column(nullable = false)
-    private Integer quantity;
+    private Integer availableQuantity;
 
-    public void deduct(int quantity) {
-        if(this.quantity < quantity) {
-            throw new InsufficientInventoryException();
-        }
-        this.quantity -= quantity;
+    @Column(nullable = false)
+    private Integer reservedQuantity;
+
+    public boolean canReserve(int quantity) {
+        return this.availableQuantity >= quantity;
     }
 
-    public void cancel(int quantity) {
-        this.quantity += quantity;
+    public void reserve(int quantity) {
+        if (!canReserve(quantity)) {
+            throw new InsufficientInventoryException();
+        }
+        this.availableQuantity -= quantity;
+        this.reservedQuantity += quantity;
+    }
+
+    public void confirmReservation(int quantity) {
+        if (this.reservedQuantity < quantity) {
+            throw new IllegalStateException("Cannot confirm more than reserved");
+        }
+        this.reservedQuantity -= quantity;
+    }
+
+    public void cancelReservation(int quantity) {
+        if (this.reservedQuantity < quantity) {
+            throw new IllegalStateException("Cannot cancel more than reserved");
+        }
+        this.reservedQuantity -= quantity;
+        this.availableQuantity += quantity;
     }
 }

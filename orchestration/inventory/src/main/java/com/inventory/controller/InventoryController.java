@@ -1,6 +1,7 @@
 package com.inventory.controller;
 
 import com.inventory.dto.InventoryCancelRequest;
+import com.inventory.dto.InventoryConfirmRequest;
 import com.inventory.dto.InventoryRequest;
 import com.inventory.entity.Inventory;
 import com.inventory.service.InventoryService;
@@ -18,15 +19,21 @@ public class InventoryController {
 
     private final InventoryService inventoryService;
 
-    @PostMapping("/deduct")
-    public ResponseEntity<Inventory> deduct(@RequestBody InventoryRequest inventoryRequest) {
-        Inventory created = inventoryService.deduct(inventoryRequest);
-        return ResponseEntity.ok(created);
+    @PostMapping("/reserve")
+    public ResponseEntity<Inventory> reserve(@RequestBody InventoryRequest request) {
+        Inventory reserved = inventoryService.reserve(request);
+        return ResponseEntity.ok(reserved);
+    }
+
+    @PostMapping("/confirm")
+    public ResponseEntity<Inventory> confirm(@RequestBody InventoryConfirmRequest request) {
+        Inventory confirmed = inventoryService.confirm(request.orderId());
+        return ResponseEntity.ok(confirmed);
     }
 
     @PostMapping("/cancel")
-    public ResponseEntity<Inventory> cancel(@RequestBody InventoryCancelRequest inventoryRequest) {
-        Inventory canceled = inventoryService.cancel(inventoryRequest.productId(), inventoryRequest.quantity());
+    public ResponseEntity<Inventory> cancel(@RequestBody InventoryCancelRequest request) {
+        Inventory canceled = inventoryService.cancelByOrderId(request.orderId());
         return ResponseEntity.ok(canceled);
     }
 }
