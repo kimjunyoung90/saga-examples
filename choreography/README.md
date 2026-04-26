@@ -67,7 +67,7 @@ sequenceDiagram
 
     Kafka->>InventoryService: ORDER_CREATED Event
     activate InventoryService
-    InventoryService->>InventoryService: Reserve Inventory
+    InventoryService->>InventoryService: Reserve Inventory<br/>(available--, reserved++)
     InventoryService->>Kafka: Publish INVENTORY_RESERVED
     deactivate InventoryService
 
@@ -76,6 +76,12 @@ sequenceDiagram
     PaymentService->>PaymentService: Process Payment (APPROVED)
     PaymentService->>Kafka: Publish PAYMENT_APPROVED
     deactivate PaymentService
+
+    Kafka->>InventoryService: PAYMENT_APPROVED Event
+    activate InventoryService
+    InventoryService->>InventoryService: Confirm Reservation<br/>(reserved--, 영구 차감 확정)
+    InventoryService->>Kafka: Publish INVENTORY_CONFIRMED
+    deactivate InventoryService
 
     Kafka->>OrderService: PAYMENT_APPROVED Event
     activate OrderService
@@ -142,8 +148,69 @@ sequenceDiagram
 | Service | Published Events | Subscribed Events |
 |---------|-----------------|-------------------|
 | **Order Service** | `ORDER_CREATED` | `PAYMENT_APPROVED`, `PAYMENT_FAILED`, `INVENTORY_FAILED` |
-| **Inventory Service** | `INVENTORY_RESERVED`, `INVENTORY_FAILED` | `ORDER_CREATED`, `PAYMENT_FAILED` |
+| **Inventory Service** | `INVENTORY_RESERVED`, `INVENTORY_CONFIRMED`, `INVENTORY_FAILED` | `ORDER_CREATED`, `PAYMENT_APPROVED`, `PAYMENT_FAILED` |
 | **Payment Service** | `PAYMENT_APPROVED`, `PAYMENT_FAILED` | `ORDER_CREATED` |
+
+## 재고 도메인 모델 — 두 단계 예약
+
+재고는 **예약(reserve) → 확정(confirm) / 취소(cancel)** 의 두 단계로 관리됩니다. e-commerce 도메인의 표준 패턴입니다.
+
+### Inventory 엔티티
+
+```java
+class Inventory {
+    int availableQuantity;   // 예약 가능한 잔여 수량
+    int reservedQuantity;    // 예약됐지만 확정 전 수량
+}
+```
+
+`availableQuantity`는 저장(denormalized) 방식 — 매번 `SUM(reservations)` 집계 안 하고 reserve/confirm/cancel 시점에 트랜잭션으로 같이 갱신해 성능과 정합성 균형.
+
+### InventoryReservation 엔티티
+
+각 예약을 **별도 행으로 추적**해서 누가(orderId) 무엇을(productId) 얼마나(quantity) 예약했는지 명시적으로 보관:
+
+```java
+class InventoryReservation {
+    Long orderId;          // unique 제약
+    Long productId;
+    int quantity;
+    ReservationStatus status;  // RESERVED / CONFIRMED / CANCELED
+    LocalDateTime createdAt;
+    LocalDateTime confirmedAt;
+    LocalDateTime canceledAt;
+}
+```
+
+이 구조의 가치:
+- **부분 취소 가능**: 한 주문의 특정 reservation만 취소
+- **중복 cancel 방어**: status 체크로 멱등 처리 (이미 CONFIRMED/CANCELED면 skip)
+- **만료 처리 가능**: createdAt 기반 timeout 도입 가능
+- **감사/추적**: 모든 예약 이력 보존
+- **정확한 cancel**: orderId로 정확히 매칭 (productId+quantity 추정 X)
+
+### 상태 전이
+
+```
+ORDER_CREATED 수신
+  └─ availableQuantity 충분 → reserve()
+        └─ Inventory: available--, reserved++
+        └─ Reservation 생성 (status=RESERVED)
+        └─ INVENTORY_RESERVED 발행
+  └─ availableQuantity 부족
+        └─ INVENTORY_FAILED 발행 (Reservation 미생성)
+
+PAYMENT_APPROVED 수신
+  └─ Reservation.confirm()
+        └─ Inventory: reserved-- (영구 차감, available 변동 없음)
+        └─ Reservation: status=CONFIRMED, confirmedAt 기록
+        └─ INVENTORY_CONFIRMED 발행
+
+PAYMENT_FAILED 수신
+  └─ Reservation.cancel()
+        └─ Inventory: reserved--, available++ (복원)
+        └─ Reservation: status=CANCELED, canceledAt 기록
+```
 
 ## 신뢰성 보장 — Outbox 패턴과 컨슈머 멱등성
 

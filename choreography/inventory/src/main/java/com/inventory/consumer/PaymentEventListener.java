@@ -1,15 +1,15 @@
 package com.inventory.consumer;
 
-import com.inventory.constant.KafkaTopics;
-import com.inventory.consumer.event.EventMessage;
-import com.inventory.consumer.event.PaymentFailed;
-import com.inventory.dto.InventoryCancelRequest;
-import com.inventory.idempotency.IdempotencyService;
-import com.inventory.idempotency.MessageHeaders;
-import com.inventory.service.InventoryService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.inventory.constant.KafkaTopics;
+import com.inventory.consumer.event.EventMessage;
+import com.inventory.consumer.event.PaymentApproved;
+import com.inventory.consumer.event.PaymentFailed;
+import com.inventory.idempotency.IdempotencyService;
+import com.inventory.idempotency.MessageHeaders;
+import com.inventory.service.InventoryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -40,18 +40,20 @@ public class PaymentEventListener {
         EventMessage message = objectMapper.readValue(record.value(), EventMessage.class);
 
         switch (message.type()) {
+            case PAYMENT_APPROVED -> handlePaymentApprovedEvent(message.payload());
             case PAYMENT_FAILED -> handlePaymentFailedEvent(message.payload());
         }
 
         idempotencyService.markProcessed(messageId, message.type().name());
     }
 
-    private void handlePaymentFailedEvent(JsonNode jsonNode) throws JsonProcessingException {
-        PaymentFailed paymentFailed = objectMapper.readValue(jsonNode.toString(), PaymentFailed.class);
-        InventoryCancelRequest inventoryCancelRequest = InventoryCancelRequest.builder()
-                .productId(paymentFailed.productId())
-                .quantity(paymentFailed.quantity())
-                .build();
-        inventoryService.cancel(inventoryCancelRequest);
+    private void handlePaymentApprovedEvent(JsonNode payload) throws JsonProcessingException {
+        PaymentApproved approved = objectMapper.readValue(payload.toString(), PaymentApproved.class);
+        inventoryService.confirm(approved.orderId());
+    }
+
+    private void handlePaymentFailedEvent(JsonNode payload) throws JsonProcessingException {
+        PaymentFailed failed = objectMapper.readValue(payload.toString(), PaymentFailed.class);
+        inventoryService.cancelByOrderId(failed.orderId());
     }
 }
