@@ -145,6 +145,92 @@ sequenceDiagram
 | **Inventory Service** | `INVENTORY_RESERVED`, `INVENTORY_FAILED` | `ORDER_CREATED`, `PAYMENT_FAILED` |
 | **Payment Service** | `PAYMENT_APPROVED`, `PAYMENT_FAILED` | `ORDER_CREATED` |
 
+## 신뢰성 보장 — Outbox 패턴과 컨슈머 멱등성
+
+EDA에서 가장 까다로운 두 가지 문제를 풀기 위한 구조입니다.
+
+### 문제 1: Dual Write Problem
+
+`@Transactional` 안에서 DB 작업과 Kafka 발행을 함께 수행하면 두 시스템의 원자성이 보장되지 않습니다.
+
+| 시나리오 | 결과 |
+|---------|------|
+| 발행 후 트랜잭션 rollback | DB 변경은 사라지지만 Kafka에 **유령 이벤트** 잔존 |
+| 트랜잭션 commit 후 발행 실패 | DB는 변경되었지만 Kafka 메시지가 **유실** |
+
+### 해결: Transactional Outbox Pattern
+
+서비스는 Kafka에 직접 발행하지 않고 **자기 DB의 `outbox_messages` 테이블에 이벤트를 INSERT**합니다. 비즈니스 엔티티 변경과 outbox INSERT가 같은 트랜잭션이라 원자적으로 commit 됩니다. 별도 스케줄러가 PENDING 행을 폴링해서 Kafka에 실제 발행하고 PUBLISHED로 마킹합니다.
+
+```mermaid
+sequenceDiagram
+    participant S as Service
+    participant DB as Business Table
+    participant OB as outbox_messages
+    participant Sch as OutboxScheduler
+    participant Kafka
+
+    rect rgb(230, 245, 255)
+        Note over S,OB: 단일 트랜잭션 (atomic)
+        S->>DB: 1. 엔티티 INSERT/UPDATE
+        S->>OB: 2. outbox INSERT (PENDING)
+    end
+
+    loop 500ms 주기
+        Sch->>OB: 3. PENDING 조회
+        Sch->>Kafka: 4. publish (header: messageId)
+        Sch->>OB: 5. PUBLISHED 마킹
+    end
+```
+
+- 트랜잭션이 rollback되면 outbox 행도 함께 사라짐 → 유령 이벤트 방지
+- 발행 실패 시 PENDING 상태로 남아 다음 폴링에서 자동 재시도 → 메시지 유실 방지
+
+### 문제 2: 컨슈머 중복 처리
+
+Kafka는 at-least-once 전달이 기본이라 같은 이벤트가 두 번 도착할 수 있습니다.
+
+### 해결: ProcessedEvent 기반 멱등성
+
+각 컨슈머는 `processed_events` 테이블에 처리한 `messageId`를 기록합니다. 메시지 처리와 messageId 기록이 같은 트랜잭션이라, 중복 수신 시 같은 작업을 두 번 수행하지 않습니다.
+
+```mermaid
+sequenceDiagram
+    participant Kafka
+    participant L as @KafkaListener
+    participant PE as processed_events
+    participant Biz as 비즈니스 로직
+
+    Kafka->>L: 이벤트 (header: messageId)
+    rect rgb(230, 245, 255)
+        Note over L,PE: 단일 트랜잭션 (atomic)
+        L->>PE: 1. messageId 존재 확인
+        alt 이미 처리됨
+            L-->>Kafka: SKIP
+        else 신규
+            L->>Biz: 2. 비즈니스 처리
+            L->>PE: 3. messageId 기록
+        end
+    end
+```
+
+### 핵심 컴포넌트
+
+| 컴포넌트 | 위치 | 역할 |
+|---------|------|------|
+| `OutboxMessage` | `outbox/` | 발행 대기 이벤트 엔티티 (PENDING/PUBLISHED) |
+| `OutboxService` | `outbox/` | 비즈니스 트랜잭션 내에서 outbox 행 적재 (`Propagation.MANDATORY`) |
+| `OutboxScheduler` | `outbox/` | 500ms 주기 폴링 발행 (`@Scheduled`) |
+| `ProcessedEvent` | `idempotency/` | 처리 완료 messageId 기록 |
+| `IdempotencyService` | `idempotency/` | 중복 체크 / 처리 마킹 |
+
+### 알려진 한계 (개선 여지)
+
+- **폴링 지연**: 기본 500ms. 실시간성이 더 필요하면 Debezium CDC로 대체 가능
+- **단일 인스턴스 가정**: 다중 인스턴스 폴러는 `SELECT ... FOR UPDATE SKIP LOCKED` 등 락 필요
+- **무한 재시도**: 발행 실패 시 영구 재시도. 운영 환경에선 retryCount + DLQ 패턴 추가 필요
+- **PUBLISHED 누적**: 오래된 published 행은 별도 정리 작업 필요
+
 ## 실행 방법
 
 ### 1. Kafka 실행
