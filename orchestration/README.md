@@ -63,38 +63,6 @@ public String orderSagaTransaction(OrderRequest request) {
 }
 ```
 
-## 재고 도메인 모델 — 두 단계 예약
-
-재고는 **예약(reserve) → 확정(confirm) / 취소(cancel)** 의 두 단계로 관리됩니다. e-commerce 도메인 표준 패턴이며, choreography 모듈과 동일한 설계.
-
-```java
-class Inventory {
-    int availableQuantity;   // 예약 가능
-    int reservedQuantity;    // 예약됐지만 확정 전
-}
-
-class InventoryReservation {
-    Long orderId;            // unique
-    Long productId;
-    int quantity;
-    ReservationStatus status; // RESERVED / CONFIRMED / CANCELED
-    LocalDateTime createdAt, confirmedAt, canceledAt;
-}
-```
-
-### 상태 전이
-
-```
-reserve()  → available--, reserved++, Reservation(RESERVED) 생성
-confirm()  → reserved-- (영구 차감), Reservation(CONFIRMED)
-cancelByOrderId() → reserved--, available++ (복원), Reservation(CANCELED)
-```
-
-### 핵심 가치
-- **누가 예약했는지 추적**: orderId 기반으로 정확히 매칭 (productId+quantity 추정 X)
-- **부분 취소 가능**: reservation 단위로 격리
-- **중복 cancel/confirm 방어**: status 체크로 비즈니스 멱등성
-
 ### Saga 테스트
 
 **Success Case:**

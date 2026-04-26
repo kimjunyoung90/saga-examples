@@ -18,18 +18,18 @@ Choreography 방식은 중앙 조정자 없이 각 서비스가 이벤트를 발
 
 ```mermaid
 flowchart BT
-    subgraph subGraph0["Message Broker"]
+    subgraph subGraph0["메시지 브로커"]
         Kafka["Apache Kafka"]
     end
-    subgraph Microservices["Microservices"]
-        OS["Order Service"]
-        PS["Payment Service"]
-        IS["Inventory Service"]
+    subgraph Microservices["마이크로서비스"]
+        OS["주문 서비스"]
+        PS["결제 서비스"]
+        IS["재고 서비스"]
     end
-    Client["Client Application"] -- Request --> OS
-    OS <-- Events --> Kafka
-    PS <-- Events --> Kafka
-    IS <-- Events --> Kafka
+    Client["클라이언트"] -- 요청 --> OS
+    OS <-- 이벤트 --> Kafka
+    PS <-- 이벤트 --> Kafka
+    IS <-- 이벤트 --> Kafka
 
     style Kafka fill:#fff3e0
     style OS fill:#e1f5fe
@@ -48,169 +48,108 @@ flowchart BT
 
 ## 이벤트 흐름
 
-### Success Flow (성공 시나리오)
+### 성공 시나리오
 
 ```mermaid
 sequenceDiagram
-    participant Client
-    participant OrderService
+    participant Client as 클라이언트
+    participant OS as 주문 서비스
     participant Kafka
-    participant InventoryService
-    participant PaymentService
+    participant IS as 재고 서비스
+    participant PS as 결제 서비스
 
-    Client->>OrderService: POST /orders
-    activate OrderService
-    OrderService->>OrderService: Create Order (PENDING)
-    OrderService->>Kafka: Publish ORDER_CREATED
-    OrderService-->>Client: 201 Created
-    deactivate OrderService
+    Client->>OS: POST /orders
+    activate OS
+    OS->>OS: 주문 생성 (PENDING)
+    OS->>Kafka: ORDER_CREATED 발행
+    OS-->>Client: 201 Created
+    deactivate OS
 
-    Kafka->>InventoryService: ORDER_CREATED Event
-    activate InventoryService
-    InventoryService->>InventoryService: Reserve Inventory<br/>(available--, reserved++)
-    InventoryService->>Kafka: Publish INVENTORY_RESERVED
-    deactivate InventoryService
+    Kafka->>IS: ORDER_CREATED 수신
+    activate IS
+    IS->>IS: 재고 예약
+    IS->>Kafka: INVENTORY_RESERVED 발행
+    deactivate IS
 
-    Kafka->>PaymentService: ORDER_CREATED Event
-    activate PaymentService
-    PaymentService->>PaymentService: Process Payment (APPROVED)
-    PaymentService->>Kafka: Publish PAYMENT_APPROVED
-    deactivate PaymentService
+    Kafka->>PS: ORDER_CREATED 수신
+    activate PS
+    PS->>PS: 결제 처리 (APPROVED)
+    PS->>Kafka: PAYMENT_APPROVED 발행
+    deactivate PS
 
-    Kafka->>InventoryService: PAYMENT_APPROVED Event
-    activate InventoryService
-    InventoryService->>InventoryService: Confirm Reservation<br/>(reserved--, 영구 차감 확정)
-    InventoryService->>Kafka: Publish INVENTORY_CONFIRMED
-    deactivate InventoryService
+    Kafka->>IS: PAYMENT_APPROVED 수신
+    activate IS
+    IS->>IS: 예약 확정
+    IS->>Kafka: INVENTORY_CONFIRMED 발행
+    deactivate IS
 
-    Kafka->>OrderService: PAYMENT_APPROVED Event
-    activate OrderService
-    OrderService->>OrderService: Update Order (APPROVED)
-    deactivate OrderService
+    Kafka->>OS: PAYMENT_APPROVED 수신
+    activate OS
+    OS->>OS: 주문 확정 (APPROVED)
+    deactivate OS
 
-    loop Polling
-        Client->>OrderService: GET /orders/{orderId}
-        OrderService-->>Client: Order Status (APPROVED)
+    loop 폴링
+        Client->>OS: GET /orders/{orderId}
+        OS-->>Client: 주문 상태 (APPROVED)
     end
 
-    Note over OrderService,PaymentService: Order completed successfully
+    Note over OS,PS: 주문 정상 완료
 ```
 
-### Failure Flow (실패 시나리오)
+### 실패 시나리오
 
 ```mermaid
 sequenceDiagram
-    participant Client
-    participant OrderService
+    participant Client as 클라이언트
+    participant OS as 주문 서비스
     participant Kafka
-    participant InventoryService
-    participant PaymentService
+    participant IS as 재고 서비스
+    participant PS as 결제 서비스
 
-    Client->>OrderService: POST /orders (userId=2)
-    activate OrderService
-    OrderService->>OrderService: Create Order (PENDING)
-    OrderService->>Kafka: Publish ORDER_CREATED
-    OrderService-->>Client: 201 Created
-    deactivate OrderService
+    Client->>OS: POST /orders (userId=2)
+    activate OS
+    OS->>OS: 주문 생성 (PENDING)
+    OS->>Kafka: ORDER_CREATED 발행
+    OS-->>Client: 201 Created
+    deactivate OS
 
-    Kafka->>InventoryService: ORDER_CREATED Event
-    activate InventoryService
-    InventoryService->>InventoryService: Reserve Inventory
-    InventoryService->>Kafka: Publish INVENTORY_RESERVED
-    deactivate InventoryService
+    Kafka->>IS: ORDER_CREATED 수신
+    activate IS
+    IS->>IS: 재고 예약
+    IS->>Kafka: INVENTORY_RESERVED 발행
+    deactivate IS
 
-    Kafka->>PaymentService: ORDER_CREATED Event
-    activate PaymentService
-    PaymentService->>PaymentService: Process Payment (FAILED)
-    PaymentService->>Kafka: Publish PAYMENT_FAILED
-    deactivate PaymentService
+    Kafka->>PS: ORDER_CREATED 수신
+    activate PS
+    PS->>PS: 결제 처리 (FAILED)
+    PS->>Kafka: PAYMENT_FAILED 발행
+    deactivate PS
 
-    Kafka->>InventoryService: PAYMENT_FAILED Event
-    activate InventoryService
-    InventoryService->>InventoryService: Rollback Inventory (Cancel)
-    deactivate InventoryService
+    Kafka->>IS: PAYMENT_FAILED 수신
+    activate IS
+    IS->>IS: 예약 취소 (보상 트랜잭션)
+    deactivate IS
 
-    Kafka->>OrderService: PAYMENT_FAILED Event
-    activate OrderService
-    OrderService->>OrderService: Update Order (CANCELED)
-    deactivate OrderService
+    Kafka->>OS: PAYMENT_FAILED 수신
+    activate OS
+    OS->>OS: 주문 취소 (CANCELED)
+    deactivate OS
 
-    loop Polling
-        Client->>OrderService: GET /orders/{orderId}
-        OrderService-->>Client: Order Status (CANCELED)
+    loop 폴링
+        Client->>OS: GET /orders/{orderId}
+        OS-->>Client: 주문 상태 (CANCELED)
     end
 
-    Note over OrderService,PaymentService: Order canceled with compensation
+    Note over OS,PS: 보상 트랜잭션으로 주문 취소 완료
 ```
 
-### Event Types
+### 이벤트 타입
 
-| Service | Published Events | Subscribed Events |
-|---------|-----------------|-------------------|
-| **Order Service** | `ORDER_CREATED` | `PAYMENT_APPROVED`, `PAYMENT_FAILED`, `INVENTORY_FAILED` |
-| **Inventory Service** | `INVENTORY_RESERVED`, `INVENTORY_CONFIRMED`, `INVENTORY_FAILED` | `ORDER_CREATED`, `PAYMENT_APPROVED`, `PAYMENT_FAILED` |
-| **Payment Service** | `PAYMENT_APPROVED`, `PAYMENT_FAILED` | `ORDER_CREATED` |
-
-## 재고 도메인 모델 — 두 단계 예약
-
-재고는 **예약(reserve) → 확정(confirm) / 취소(cancel)** 의 두 단계로 관리됩니다. e-commerce 도메인의 표준 패턴입니다.
-
-### Inventory 엔티티
-
-```java
-class Inventory {
-    int availableQuantity;   // 예약 가능한 잔여 수량
-    int reservedQuantity;    // 예약됐지만 확정 전 수량
-}
-```
-
-`availableQuantity`는 저장(denormalized) 방식 — 매번 `SUM(reservations)` 집계 안 하고 reserve/confirm/cancel 시점에 트랜잭션으로 같이 갱신해 성능과 정합성 균형.
-
-### InventoryReservation 엔티티
-
-각 예약을 **별도 행으로 추적**해서 누가(orderId) 무엇을(productId) 얼마나(quantity) 예약했는지 명시적으로 보관:
-
-```java
-class InventoryReservation {
-    Long orderId;          // unique 제약
-    Long productId;
-    int quantity;
-    ReservationStatus status;  // RESERVED / CONFIRMED / CANCELED
-    LocalDateTime createdAt;
-    LocalDateTime confirmedAt;
-    LocalDateTime canceledAt;
-}
-```
-
-이 구조의 가치:
-- **부분 취소 가능**: 한 주문의 특정 reservation만 취소
-- **중복 cancel 방어**: status 체크로 멱등 처리 (이미 CONFIRMED/CANCELED면 skip)
-- **만료 처리 가능**: createdAt 기반 timeout 도입 가능
-- **감사/추적**: 모든 예약 이력 보존
-- **정확한 cancel**: orderId로 정확히 매칭 (productId+quantity 추정 X)
-
-### 상태 전이
-
-```
-ORDER_CREATED 수신
-  └─ availableQuantity 충분 → reserve()
-        └─ Inventory: available--, reserved++
-        └─ Reservation 생성 (status=RESERVED)
-        └─ INVENTORY_RESERVED 발행
-  └─ availableQuantity 부족
-        └─ INVENTORY_FAILED 발행 (Reservation 미생성)
-
-PAYMENT_APPROVED 수신
-  └─ Reservation.confirm()
-        └─ Inventory: reserved-- (영구 차감, available 변동 없음)
-        └─ Reservation: status=CONFIRMED, confirmedAt 기록
-        └─ INVENTORY_CONFIRMED 발행
-
-PAYMENT_FAILED 수신
-  └─ Reservation.cancel()
-        └─ Inventory: reserved--, available++ (복원)
-        └─ Reservation: status=CANCELED, canceledAt 기록
-```
+| 서비스 | 발행 이벤트 | 구독 이벤트 |
+|--------|-----------|-----------|
+| **주문 서비스** | `ORDER_CREATED` | `PAYMENT_APPROVED`, `PAYMENT_FAILED`, `INVENTORY_FAILED` |
+| **재고 서비스** | `INVENTORY_RESERVED`, `INVENTORY_CONFIRMED`, `INVENTORY_FAILED` | `ORDER_CREATED`, `PAYMENT_APPROVED`, `PAYMENT_FAILED` |
+| **결제 서비스** | `PAYMENT_APPROVED`, `PAYMENT_FAILED` | `ORDER_CREATED` |
 
 ## 신뢰성 보장 — Outbox 패턴과 컨슈머 멱등성
 
