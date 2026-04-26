@@ -1,9 +1,10 @@
 package com.example.service;
 
+import com.example.constant.KafkaTopics;
 import com.example.dto.OrderRequest;
 import com.example.entity.Order;
 import com.example.exception.OrderNotFoundException;
-import com.example.producer.OrderEventProducer;
+import com.example.outbox.OutboxService;
 import com.example.producer.event.MessageType;
 import com.example.producer.event.OrderCreated;
 import com.example.producer.event.OrderMessage;
@@ -19,8 +20,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class OrderService {
 
     private final OrderRepository orderRepository;
-    private final OrderEventProducer orderEventProducer;
+    private final OutboxService outboxService;
 
+    //주문 발행
     @Transactional
     public Order create(OrderRequest orderRequest) {
         Order order = Order.builder()
@@ -31,7 +33,6 @@ public class OrderService {
                 .build();
         order = orderRepository.save(order);
 
-        //message
         OrderCreated payload = OrderCreated.builder()
                 .orderId(order.getId())
                 .userId(order.getUserId())
@@ -40,12 +41,18 @@ public class OrderService {
                 .amount(order.getAmount())
                 .build();
 
-        OrderMessage message = OrderMessage.builder()
+        OrderMessage envelope = OrderMessage.builder()
                 .type(MessageType.ORDER_CREATED.name())
                 .payload(payload)
                 .build();
 
-        orderEventProducer.publishOrderCreated(message);
+        //outbox pattern 메시지 발행 보장
+        outboxService.record(
+                KafkaTopics.ORDER_EVENTS,
+                MessageType.ORDER_CREATED.name(),
+                String.valueOf(order.getId()),
+                envelope
+        );
 
         return order;
     }
@@ -53,7 +60,7 @@ public class OrderService {
     @Transactional
     public Order approveOrder(Long orderId) {
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new OrderNotFoundException());
+                .orElseThrow(OrderNotFoundException::new);
 
         order.updateStatus(Order.OrderStatus.APPROVED);
         return orderRepository.save(order);
@@ -62,7 +69,7 @@ public class OrderService {
     @Transactional
     public Order cancelOrder(Long orderId) {
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new OrderNotFoundException());
+                .orElseThrow(OrderNotFoundException::new);
 
         order.updateStatus(Order.OrderStatus.CANCELED);
         return orderRepository.save(order);

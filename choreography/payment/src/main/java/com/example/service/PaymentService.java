@@ -1,8 +1,9 @@
 package com.example.service;
 
+import com.example.constant.KafkaTopics;
 import com.example.dto.PaymentRequest;
 import com.example.entity.Payment;
-import com.example.producer.PaymentEventProducer;
+import com.example.outbox.OutboxService;
 import com.example.producer.event.MessageType;
 import com.example.producer.event.PaymentCreated;
 import com.example.producer.event.PaymentFailed;
@@ -19,12 +20,12 @@ import static com.example.entity.Payment.PaymentStatus.*;
 public class PaymentService {
 
     private final PaymentRepository paymentRepository;
-    private final PaymentEventProducer paymentEventProducer;
+    private final OutboxService outboxService;
 
+    //결제
     @Transactional
     public Payment create(PaymentRequest paymentRequest) {
 
-        //1. 결제 요청
         Payment newPayment = Payment.builder()
                 .userId(paymentRequest.userId())
                 .orderId(paymentRequest.orderId())
@@ -33,41 +34,60 @@ public class PaymentService {
                 .build();
         Payment payment = paymentRepository.save(newPayment);
 
-        //2. 결제 상태
         payment.updateStatus(paymentRequest.userId() == 2 ? FAILED : APPROVED);
         payment = paymentRepository.save(payment);
 
-        //3. 결제 상태에 따라 이벤트 발행
         if (payment.getStatus() == FAILED) {
-            PaymentFailed failedPayload = PaymentFailed.builder()
-                    .paymentId(payment.getId())
-                    .userId(payment.getUserId())
-                    .orderId(payment.getOrderId())
-                    .totalAmount(payment.getTotalAmount())
-                    .status(FAILED.name())
-                    .build();
-
-            PaymentMessage failedMessage = PaymentMessage.builder()
-                    .type(MessageType.PAYMENT_FAILED.name())
-                    .payload(failedPayload)
-                    .build();
-            paymentEventProducer.publishPaymentCreated(failedMessage);
+            recordFailedEvent(payment);
         } else {
-            PaymentCreated approvedPayload = PaymentCreated.builder()
-                    .paymentId(payment.getId())
-                    .userId(payment.getUserId())
-                    .orderId(payment.getOrderId())
-                    .totalAmount(payment.getTotalAmount())
-                    .status(APPROVED.name())
-                    .build();
-
-            PaymentMessage approvedMessage = PaymentMessage.builder()
-                    .type(MessageType.PAYMENT_APPROVED.name())
-                    .payload(approvedPayload)
-                    .build();
-            paymentEventProducer.publishPaymentCreated(approvedMessage);
+            recordApprovedEvent(payment);
         }
 
         return payment;
+    }
+
+    private void recordApprovedEvent(Payment payment) {
+        PaymentCreated payload = PaymentCreated.builder()
+                .paymentId(payment.getId())
+                .userId(payment.getUserId())
+                .orderId(payment.getOrderId())
+                .totalAmount(payment.getTotalAmount())
+                .status(APPROVED.name())
+                .build();
+
+        //outbox pattern
+        PaymentMessage envelope = PaymentMessage.builder()
+                .type(MessageType.PAYMENT_APPROVED.name())
+                .payload(payload)
+                .build();
+
+        outboxService.record(
+                KafkaTopics.PAYMENT_EVENTS,
+                MessageType.PAYMENT_APPROVED.name(),
+                String.valueOf(payment.getOrderId()),
+                envelope
+        );
+    }
+
+    private void recordFailedEvent(Payment payment) {
+        PaymentFailed payload = PaymentFailed.builder()
+                .paymentId(payment.getId())
+                .userId(payment.getUserId())
+                .orderId(payment.getOrderId())
+                .totalAmount(payment.getTotalAmount())
+                .status(FAILED.name())
+                .build();
+
+        PaymentMessage envelope = PaymentMessage.builder()
+                .type(MessageType.PAYMENT_FAILED.name())
+                .payload(payload)
+                .build();
+
+        outboxService.record(
+                KafkaTopics.PAYMENT_EVENTS,
+                MessageType.PAYMENT_FAILED.name(),
+                String.valueOf(payment.getOrderId()),
+                envelope
+        );
     }
 }
