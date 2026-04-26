@@ -17,6 +17,8 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -30,21 +32,23 @@ public class PaymentEventListener {
             groupId = "inventory-service"
     )
     @Transactional(rollbackFor = Exception.class)
-    public void handlePaymentEvent(ConsumerRecord<String, String> record) throws JsonProcessingException {
-        String messageId = MessageHeaders.extractMessageId(record);
-        if (idempotencyService.isDuplicate(messageId)) {
-            log.info("Skip duplicate payment event messageId={}", messageId);
-            return;
+    public void handlePaymentEvent(List<ConsumerRecord<String, String>> records) throws JsonProcessingException {
+        log.info("Received {} payment events in batch", records.size());
+        for (ConsumerRecord<String, String> record : records) {
+            String messageId = MessageHeaders.extractMessageId(record);
+            if (idempotencyService.isDuplicate(messageId)) {
+                log.info("Skip duplicate payment event messageId={}", messageId);
+                continue;
+            }
+
+            EventMessage message = objectMapper.readValue(record.value(), EventMessage.class);
+            switch (message.type()) {
+                case PAYMENT_APPROVED -> handlePaymentApprovedEvent(message.payload());
+                case PAYMENT_FAILED -> handlePaymentFailedEvent(message.payload());
+            }
+
+            idempotencyService.markProcessed(messageId, message.type().name());
         }
-
-        EventMessage message = objectMapper.readValue(record.value(), EventMessage.class);
-
-        switch (message.type()) {
-            case PAYMENT_APPROVED -> handlePaymentApprovedEvent(message.payload());
-            case PAYMENT_FAILED -> handlePaymentFailedEvent(message.payload());
-        }
-
-        idempotencyService.markProcessed(messageId, message.type().name());
     }
 
     private void handlePaymentApprovedEvent(JsonNode payload) throws JsonProcessingException {

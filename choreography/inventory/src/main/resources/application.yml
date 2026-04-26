@@ -18,9 +18,13 @@ spring:
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
 
+    listener:
+      type: batch
+
     consumer:
       group-id: inventory-service
       auto-offset-reset: earliest # consumer가 토픽을 읽을 때 어디서부터 읽을 지 지정하는 설정
+      max-poll-records: 50
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       properties:

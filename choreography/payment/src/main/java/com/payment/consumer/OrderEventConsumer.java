@@ -17,6 +17,8 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -30,19 +32,22 @@ public class OrderEventConsumer {
             groupId = "payment-service"
     )
     @Transactional(rollbackFor = Exception.class)
-    public void handleOrderEvent(ConsumerRecord<String, String> record) throws JsonProcessingException {
-        String messageId = MessageHeaders.extractMessageId(record);
-        if (idempotencyService.isDuplicate(messageId)) {
-            log.info("Skip duplicate order event messageId={}", messageId);
-            return;
-        }
+    public void handleOrderEvent(List<ConsumerRecord<String, String>> records) throws JsonProcessingException {
+        log.info("Received {} order events in batch", records.size());
+        for (ConsumerRecord<String, String> record : records) {
+            String messageId = MessageHeaders.extractMessageId(record);
+            if (idempotencyService.isDuplicate(messageId)) {
+                log.info("Skip duplicate order event messageId={}", messageId);
+                continue;
+            }
 
-        EventMessage eventMessage = objectMapper.readValue(record.value(), EventMessage.class);
-        switch (eventMessage.type()) {
-            case ORDER_CREATED -> handleOrderCreatedEvent(eventMessage.payload());
-        }
+            EventMessage eventMessage = objectMapper.readValue(record.value(), EventMessage.class);
+            switch (eventMessage.type()) {
+                case ORDER_CREATED -> handleOrderCreatedEvent(eventMessage.payload());
+            }
 
-        idempotencyService.markProcessed(messageId, eventMessage.type().name());
+            idempotencyService.markProcessed(messageId, eventMessage.type().name());
+        }
     }
 
     private void handleOrderCreatedEvent(JsonNode payload) throws JsonProcessingException {

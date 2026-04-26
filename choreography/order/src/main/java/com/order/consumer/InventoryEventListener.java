@@ -16,6 +16,8 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -30,19 +32,22 @@ public class InventoryEventListener {
         groupId = "order-service"
     )
     @Transactional(rollbackFor = Exception.class)
-    public void handleInventoryEvent(ConsumerRecord<String, String> record) throws JsonProcessingException {
-        String messageId = MessageHeaders.extractMessageId(record);
-        if (idempotencyService.isDuplicate(messageId)) {
-            log.info("Skip duplicate inventory event messageId={}", messageId);
-            return;
-        }
+    public void handleInventoryEvent(List<ConsumerRecord<String, String>> records) throws JsonProcessingException {
+        log.info("Received {} inventory events in batch", records.size());
+        for (ConsumerRecord<String, String> record : records) {
+            String messageId = MessageHeaders.extractMessageId(record);
+            if (idempotencyService.isDuplicate(messageId)) {
+                log.info("Skip duplicate inventory event messageId={}", messageId);
+                continue;
+            }
 
-        EventMessage eventMessage = objectMapper.readValue(record.value(), EventMessage.class);
-        switch (eventMessage.type()) {
-            case INVENTORY_FAILED -> handleInventoryFailedEvent(eventMessage.payload());
-        }
+            EventMessage eventMessage = objectMapper.readValue(record.value(), EventMessage.class);
+            switch (eventMessage.type()) {
+                case INVENTORY_FAILED -> handleInventoryFailedEvent(eventMessage.payload());
+            }
 
-        idempotencyService.markProcessed(messageId, eventMessage.type().name());
+            idempotencyService.markProcessed(messageId, eventMessage.type().name());
+        }
     }
 
     private void handleInventoryFailedEvent(JsonNode payload) throws JsonProcessingException {

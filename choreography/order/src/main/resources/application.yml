@@ -16,9 +16,13 @@ spring:
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
 
+    listener:
+      type: batch   # 단일 레코드가 아닌 배치 단위로 리스너에 전달
+
     consumer:
       group-id: order-service
       auto-offset-reset: earliest
+      max-poll-records: 50   # 한 번에 가져올 최대 레코드 수
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       properties:
