@@ -274,18 +274,12 @@ sequenceDiagram
 
 ## 실행 방법
 
-Kafka, MySQL, 3개 서비스 모두 docker-compose로 한 번에 띄웁니다.
+Kafka, MySQL, 3개 서비스 모두 docker-compose로 한 번에 띄웁니다. JAR 빌드는 Dockerfile 안에서 수행되므로 별도 작업 불필요.
 
-### 1. JAR 빌드
+### 1. docker-compose로 전체 실행
 
 ```bash
 cd choreography
-./gradlew bootJar
-```
-
-### 2. docker-compose로 전체 실행
-
-```bash
 docker-compose up -d
 ```
 
@@ -301,16 +295,16 @@ docker-compose up -d
 
 서비스들은 `kafka` 헬스체크 통과 후 자동으로 기동되고, MySQL도 마찬가지입니다.
 
-### 3. 종료
+### 2. 종료
 
 ```bash
 docker-compose down       # 컨테이너만 정리
 docker-compose down -v    # 컨테이너 + 볼륨 함께 정리 (DB 초기화)
 ```
 
-### 4. Saga 테스트
+### 3. Saga 테스트
 
-**Success Case:**
+**Success Case (userId=1):**
 ```bash
 curl -X POST http://localhost:8081/orders \
   -H "Content-Type: application/json" \
@@ -318,43 +312,57 @@ curl -X POST http://localhost:8081/orders \
     "userId": 1,
     "productId": 1,
     "quantity": 2,
-    "price": 10000
+    "amount": 10000
   }'
 ```
 
 응답:
 ```json
 {
-  "orderId": 1,
+  "id": 1,
   "userId": 1,
   "productId": 1,
   "quantity": 2,
-  "price": 10000,
+  "amount": 10000,
   "status": "PENDING"
 }
 ```
 
-주문 상태 확인 (폴링):
+응답은 즉시 PENDING으로 받지만 saga가 비동기로 진행됩니다. 최종 상태는 DB에서 확인:
+
 ```bash
-curl http://localhost:8081/orders/1
+docker exec mysql mysql -usaga -psaga -e "SELECT id, status FROM orderdb.orders;"
 ```
 
-최종 상태: `APPROVED`
+수 초 후 → `APPROVED`
 
-**Payment Failure Case:**
-2번 사용자는 결제 실패하도록 구현되어 있습니다.
+**Payment Failure Case (userId=2):**
+
+`userId=2`는 결제 실패하도록 구현되어 있어 보상 트랜잭션이 실행됩니다.
+
 ```bash
 curl -X POST http://localhost:8081/orders \
   -H "Content-Type: application/json" \
   -d '{
     "userId": 2,
     "productId": 1,
-    "quantity": 2,
-    "price": 10000
+    "quantity": 1,
+    "amount": 5000
   }'
 ```
 
-최종 상태: `CANCELED` (보상 트랜잭션 실행됨)
+최종 상태: `CANCELED` (재고 예약 → 결제 실패 → 재고 예약 취소 + 주문 취소)
+
+**전체 saga 상태 확인:**
+
+```bash
+docker exec mysql mysql -usaga -psaga -e "
+  SELECT id, status FROM orderdb.orders;
+  SELECT order_id, product_id, quantity, status FROM inventorydb.inventory_reservations;
+  SELECT product_id, available_quantity, reserved_quantity FROM inventorydb.inventory;
+  SELECT id, order_id, status FROM paymentdb.payments;
+"
+```
 
 ## 참고 자료
 
